@@ -26,6 +26,7 @@
       </div>
 
       <div ref="threeContainer" class="hero-three-bg"></div>
+      <div v-if="sceneFailed" class="scene-fallback" aria-hidden="true"><span>Signal Lab</span><small>可视化工作台</small></div>
 
       <div class="hero-grid">
         <div class="hero-left">
@@ -164,6 +165,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const emit = defineEmits<{ (e: 'enter'): void }>()
 const threeContainer = ref<HTMLDivElement | null>(null)
+const sceneFailed = ref(false)
 
 function seeded(seed: number) {
   let s = seed; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280 }
@@ -202,11 +204,12 @@ onMounted(() => {
   const script = document.createElement('script')
   script.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
   script.onload = () => initScene()
+  script.onerror = () => { sceneFailed.value = true }
   document.head.appendChild(script)
 
   function initScene() {
     const THREE = (window as any).THREE
-    if (!THREE || !threeContainer.value) return
+    if (!THREE || !threeContainer.value) { sceneFailed.value = true; return }
 
     const container = threeContainer.value
     let W = container.clientWidth, H = container.clientHeight
@@ -221,6 +224,7 @@ onMounted(() => {
     renderer.setSize(W, H)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     container.appendChild(renderer.domElement)
+    sceneFailed.value = false
 
     scene.add(new THREE.AmbientLight(0x475569, 0.7))
     const key = new THREE.DirectionalLight(0xc7d2fe, 0.6)
@@ -241,14 +245,14 @@ onMounted(() => {
     planetGeo.setAttribute('color', new THREE.BufferAttribute(cols, 3))
 
     const planetMat = new THREE.MeshPhongMaterial({
-      color: 0x4f46e5, emissive: 0x312e81, emissiveIntensity: 0.08,
-      specular: 0x818cf8, shininess: 25, flatShading: true, vertexColors: true,
+      color: 0x2e8b78, emissive: 0x163f38, emissiveIntensity: 0.08,
+      specular: 0xe56b55, shininess: 25, flatShading: true, vertexColors: true,
     })
     const planet = new THREE.Mesh(planetGeo, planetMat)
     planet.position.set(3.0, 0, -1.8); scene.add(planet)
 
     const wireframe = new THREE.Mesh(new THREE.IcosahedronGeometry(2.1, 1),
-      new THREE.MeshBasicMaterial({ color: 0x818cf8, wireframe: true, transparent: true, opacity: 0.1 }))
+      new THREE.MeshBasicMaterial({ color: 0xe56b55, wireframe: true, transparent: true, opacity: 0.13 }))
     wireframe.position.copy(planet.position); scene.add(wireframe)
 
     const dotGeo = new THREE.BufferGeometry(); const dotPos = new Float32Array(30 * 3)
@@ -259,7 +263,7 @@ onMounted(() => {
       dotPos[i * 3 + 2] = Math.cos(phi) * r
     }
     dotGeo.setAttribute('position', new THREE.BufferAttribute(dotPos, 3))
-    const dots = new THREE.Points(dotGeo, new THREE.PointsMaterial({ color: 0xc7d2fe, size: 0.05, transparent: true, opacity: 0.5, sizeAttenuation: true }))
+    const dots = new THREE.Points(dotGeo, new THREE.PointsMaterial({ color: 0xffb09f, size: 0.05, transparent: true, opacity: 0.5, sizeAttenuation: true }))
     dots.position.copy(planet.position); scene.add(dots)
 
     const pivot = new THREE.Group()
@@ -334,11 +338,11 @@ onBeforeUnmount(() => { if (cleanup) cleanup() })
 .top-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 200; backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3); background: rgba(15,23,42,0.55); border-bottom: 1px solid rgba(255,255,255,0.05); }
 .nav-inner { display: flex; justify-content: space-between; align-items: center; padding: 0.7rem 2.5rem; max-width: 1400px; margin: 0 auto; }
 .logo-wrap { display: flex; align-items: center; gap: 0.6rem; }
-.logo-icon { width: 26px; height: 26px; background: linear-gradient(135deg, #0891b2, #d97706); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.75rem; }
+.logo-icon { width: 26px; height: 26px; background: linear-gradient(135deg, #e56b55, #2e8b78); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.75rem; }
 .logo-text { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; color: #fff; }
 .logo-ver { font-size: 0.65rem; font-weight: 500; color: #64748b; }
-.nav-cta { padding: 0.4rem 1.1rem; border-radius: 100px; background: linear-gradient(135deg, #0891b2, #2563eb); color: #fff; font-weight: 600; font-size: 0.78rem; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; }
-.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(8,145,178,0.3); }
+.nav-cta { padding: 0.4rem 1.1rem; border-radius: 100px; background: linear-gradient(135deg, #e56b55, #2e8b78); color: #fff; font-weight: 600; font-size: 0.78rem; cursor: pointer; transition: all 0.2s; border: none; font-family: inherit; }
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(229,107,85,0.3); }
 .starfield { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .sf-bg { position: absolute; inset: 0; background: #0f172a; }
 .sf-grad { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 50%, #0a0f1a 100%); mix-blend-mode: screen; }
@@ -352,7 +356,7 @@ onBeforeUnmount(() => { if (cleanup) cleanup() })
 .hero-grid { position: relative; z-index: 2; display: grid; grid-template-columns: 60% 40%; height: calc(100vh - 56px); padding-top: 56px; }
 .hero-left { display: flex; flex-direction: column; justify-content: center; gap: 0.5rem; padding: 2rem 80px 6rem 48px; }
 .hero-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.85rem; border-radius: 100px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); font-size: 0.78rem; font-weight: 500; color: rgba(255,255,255,0.6); width: fit-content; }
-.hero-title { font-size: clamp(2.8rem, 4.5vw, 4.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin: 0; background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.hero-title { font-size: clamp(2.8rem, 4.5vw, 4.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; margin: 0; background: linear-gradient(135deg, #ffb09f 0%, #e56b55 64%, #2e8b78 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .hero-subtitle { font-size: clamp(1.4rem, 2.2vw, 2.25rem); font-weight: 300; color: #fff; letter-spacing: -0.02em; margin: 0; }
 .hero-desc { font-size: clamp(0.85rem, 1.05vw, 1.05rem); color: #94a3b8; line-height: 1.8; max-width: 520px; margin: 0.2rem 0; }
 .hero-buttons { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.4rem; }
@@ -361,9 +365,12 @@ onBeforeUnmount(() => { if (cleanup) cleanup() })
 .auth-name { font-size: 0.88rem; color: #94a3b8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
 .auth-name:hover { color: #fff; }
 .hero-right { pointer-events: none; }
+.scene-fallback { position: absolute; right: 13%; top: 44%; z-index: 2; display: flex; flex-direction: column; gap: 0.25rem; color: rgba(255,255,255,0.82); font-family: 'JetBrains Mono', monospace; pointer-events: none; }
+.scene-fallback span { color: #ffb09f; font-size: 1.2rem; letter-spacing: 0.04em; }
+.scene-fallback small { color: #8ea39c; font-size: 0.68rem; letter-spacing: 0.08em; }
 .btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 0; border-radius: 100px; font-size: 0.88rem; font-weight: 600; border: none; cursor: pointer; transition: all 0.3s ease; text-decoration: none; font-family: inherit; width: 200px; justify-content: center; }
-.btn-primary { background: linear-gradient(135deg, #0891b2, #2563eb); color: #fff; box-shadow: 0 4px 20px rgba(8,145,178,0.3); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(8,145,178,0.45); }
+.btn-primary { background: linear-gradient(135deg, #e56b55, #2e8b78); color: #fff; box-shadow: 0 4px 20px rgba(229,107,85,0.3); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(229,107,85,0.45); }
 .btn-secondary { background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
 .btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
 .metrics-track { position: absolute; bottom: 24px; left: 0; right: 0; z-index: 10; padding: 0 3rem; }
@@ -377,7 +384,7 @@ onBeforeUnmount(() => { if (cleanup) cleanup() })
 .band-features2 { min-height: 400px; background: #fff; padding: 5rem 2rem; }
 .fi { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 30% 70%; gap: 2rem; align-items: start; }
 .fl { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 0.8rem; }
-.fl-badge { font-size: 0.7rem; font-weight: 600; color: #2563eb; text-transform: uppercase; letter-spacing: 0.08em; }
+.fl-badge { font-size: 0.7rem; font-weight: 600; color: #e56b55; text-transform: uppercase; letter-spacing: 0.08em; }
 .fl-title { font-size: clamp(1.5rem, 2.5vw, 2.25rem); font-weight: 700; letter-spacing: -0.02em; color: #0f172a; margin: 0; }
 .fl-desc { font-size: 0.95rem; color: #64748b; line-height: 1.7; margin: 0; }
 .mini-s-wrap { position: relative; width: 100px; height: 100px; margin-top: 0.3rem; }
@@ -386,8 +393,8 @@ onBeforeUnmount(() => { if (cleanup) cleanup() })
 .mini-s.s2 { background: radial-gradient(circle at 35% 30%, #f59e0b, #d97706 55%, #78350f 100%); box-shadow: inset -20px -20px 60px rgba(0,0,0,0.3), 0 0 40px rgba(245,158,11,0.2); }
 .fr { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .fc { padding: 1.5rem; border-radius: 14px; background: #fff; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 1px 4px rgba(0,0,0,0.03); transition: all 0.3s ease; display: flex; flex-direction: column; gap: 0.5rem; }
-.fc:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); border-color: rgba(37,99,235,0.12); }
-.fc-i { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg,rgba(8,145,178,0.08),rgba(37,99,235,0.08)); border: 1px solid rgba(37,99,235,0.1); display: flex; align-items: center; justify-content: center; color: #2563eb; }
+.fc:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); border-color: rgba(229,107,85,0.24); }
+.fc-i { width: 44px; height: 44px; border-radius: 10px; background: linear-gradient(135deg,rgba(229,107,85,0.1),rgba(46,139,120,0.1)); border: 1px solid rgba(229,107,85,0.16); display: flex; align-items: center; justify-content: center; color: #e56b55; }
 .fc-i svg { width: 22px; height: 22px; }
 .fc h3 { font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0; }
 .fc p { font-size: 0.82rem; color: #64748b; line-height: 1.6; margin: 0; flex: 1; }
@@ -419,5 +426,5 @@ onBeforeUnmount(() => { if (cleanup) cleanup() })
   .m-item { flex-direction: row; gap: 0.3rem; min-width: 30%; justify-content: center; padding: 0.2rem 0; } .m-num { font-size: 1.1rem; } .m-lbl { font-size: 0.6rem; }
   .fr { grid-template-columns: 1fr; } .footer-i { grid-template-columns: 1fr; text-align: center; gap: 1.25rem; } .footer-c-r { text-align: center; }
 }
-@media (prefers-reduced-motion: reduce) { .fc:hover { transform: none; } .mini-s { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .fc:hover { transform: none; } .mini-s { animation: none; } .hero-three-bg { display: none; } .scene-fallback { display: flex; } }
 </style>

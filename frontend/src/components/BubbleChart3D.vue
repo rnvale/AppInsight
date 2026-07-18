@@ -156,7 +156,7 @@ watch(function() { return [props.sentimentFilter, props.aspectFilter] }, functio
 }
 .spinner {
   width: 20px; height: 20px; border: 2px solid #e2e8f0;
-  border-top-color: #2563eb; border-radius: 50%;
+  border-top-color: var(--accent); border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }

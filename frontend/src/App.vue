@@ -6,8 +6,8 @@
     <svg style="position:absolute;width:0;height:0" aria-hidden="true">
       <defs>
         <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#2563eb"/>
-          <stop offset="100%" stop-color="#7c3aed"/>
+          <stop offset="0%" stop-color="#E56B55"/>
+          <stop offset="100%" stop-color="#2E8B78"/>
         </linearGradient>
       </defs>
     </svg>
@@ -40,7 +40,7 @@
       <div class="sidebar-footer">
         <div class="sf-row"><span class="sf-label">数据来源</span><span class="sf-value">AWARE</span></div>
         <div class="sf-row"><span class="sf-label">记录数</span><span class="sf-value">{{ fmt(total) }} 条</span></div>
-        <div class="sf-row" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.06)">
+        <div class="sf-row" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(220,232,227,0.1)">
           <span class="sf-label">作者</span><span class="sf-value">RainVale</span>
         </div>
         <div class="sf-row" style="align-items:center">
@@ -59,6 +59,17 @@
 
     <!-- Main -->
     <main class="main" id="main-content" ref="mainRef">
+      <WorkspaceBar
+        :page-label="currentPage.label"
+        :page-description="currentPage.description"
+        dataset-label="AWARE / 综合数据集"
+        :filters="activeFilters"
+        :updated-at="updatedAt"
+        :exporting="exporting"
+        @clear-filter="clearFilter"
+        @refresh="refreshData"
+        @export="downloadFilteredData"
+      />
 
       <!-- Dashboard -->
       <section v-if="view === 'dashboard'" ref="pageRef" class="page">
@@ -82,6 +93,17 @@
           </div>
         </header>
         <div class="content">
+          <InsightSummary
+            :positive-rate="posPct"
+            :avg-rating="avgRating"
+            :nps-score="npsScore"
+            :total="total"
+            :aspect-count="aspectCount"
+            :avg-length="avgLen"
+            :sentiment="sf"
+            :category="af"
+            @open="switchView"
+          />
           <div class="metrics-bar">
             <div class="mb-item"><span class="mb-lbl">平均评分</span><span class="mb-val">{{ avgRating }}</span><div class="mb-stars">{{ '★'.repeat(Math.round(Number(avgRating))) }}{{ '☆'.repeat(5 - Math.round(Number(avgRating))) }}</div></div>
             <div class="mb-divider"></div>
@@ -180,7 +202,7 @@
 
       <!-- Compare -->
       <section v-if="view === 'compare'" ref="pageRef" class="page">
-        <header class="page-header page-header-sm" style="background:linear-gradient(180deg,#eef2ff,#f5f7fb)">
+        <header class="page-header page-header-sm">
           <div class="hero-content">
             <div class="page-tag-group"><span class="tag tag-dark">对比</span></div>
             <h1 class="page-title hero-title">多数据集对比分析</h1>
@@ -194,7 +216,7 @@
 
       <!-- Explorer -->
       <section v-if="view === 'explorer'" ref="pageRef" class="page">
-        <header class="page-header page-header-sm" style="background:linear-gradient(180deg,#fdf2f8,#f5f7fb)">
+        <header class="page-header page-header-sm">
           <div class="hero-content">
             <div class="page-tag-group"><span class="tag tag-dark">浏览</span></div>
             <h1 class="page-title hero-title">数据浏览与钻取</h1>
@@ -221,6 +243,7 @@
     </main>
 
     <div class="filter-dock"><FilterBar v-model:sentimentFilter="sf" v-model:aspectFilter="af"/></div>
+    <div v-if="toast" class="toast" :class="toast.kind" role="status">{{ toast.message }}</div>
     <button v-if="showTop" class="top-btn" @click="scrollToTop" aria-label="回到顶部">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
     </button>
@@ -230,6 +253,8 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from "vue"
 import FilterBar from "./components/FilterBar.vue"
+import WorkspaceBar from "./components/WorkspaceBar.vue"
+import InsightSummary from "./components/InsightSummary.vue"
 import SentimentGauge from "./components/SentimentGauge.vue"
 import RatingSentiment from "./components/RatingSentiment.vue"
 import DomainCompare from "./components/DomainCompare.vue"
@@ -249,7 +274,7 @@ import AppRatingsDetail from "./components/AppRatingsDetail.vue"
 import TopicClusters from "./components/TopicClusters.vue"
 import CompareDatasets from "./components/CompareDatasets.vue"
 import DataExplorer from "./components/DataExplorer.vue"
-import { gsap } from "./composables/useGsapAnimation"
+import { gsap, ScrollTrigger } from "./composables/useGsapAnimation"
 import http from "./http"
 
 const nav = [
@@ -261,12 +286,24 @@ const nav = [
   { key: "explorer", label: "浏览", icon: "M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7m-6 5H7m10 0h0M7 12l3-3m-3 3l3 3" },
 ]
 
+const pageDescriptions: Record<string, string> = {
+  dashboard: "整体健康度与关键变化",
+  sentiment: "评分与方面的情感关联",
+  topics: "主题聚类与关键词洞察",
+  rankings: "App 评分与竞争位置",
+  compare: "跨数据集差异比较",
+  explorer: "原始评论筛选与钻取",
+}
+
 const fmt = (n: number) => n.toLocaleString()
 const navIndex = computed(() => Math.max(0, nav.findIndex((x) => x.key === view.value)))
 const view = ref("dashboard")
 const showLanding = ref(true)
 const sf = ref("全部"); const af = ref("全部")
 const showTop = ref(false)
+const exporting = ref(false)
+const updatedAt = ref("刚刚")
+const toast = ref<{ kind: "success" | "error"; message: string } | null>(null)
 const sidebarRef = ref<HTMLElement | null>(null)
 const pageRef = ref<HTMLElement | null>(null)
 const chartsRow1 = ref<HTMLElement | null>(null)
@@ -280,6 +317,77 @@ const avgRating = ref("3.8"); const avgLen = ref("0"); const aspectCount = ref(1
 const posPct = computed(() => (total.value > 0 ? ((pos.value / total.value) * 100).toFixed(1) : "0.0"))
 const npsClass = computed(() => npsScore.value > 30 ? "mb-val mb-val-grn" : npsScore.value > 0 ? "mb-val" : "mb-val hs-neg")
 const anim = reactive({ total: "0", pos: "0", neg: "0" })
+const currentPage = computed(() => ({
+  label: nav.find((item) => item.key === view.value)?.label ?? "总览",
+  description: pageDescriptions[view.value] ?? pageDescriptions.dashboard,
+}))
+const activeFilters = computed(() => [
+  sf.value !== "全部" ? { label: "情感", value: sf.value } : null,
+  af.value !== "全部" ? { label: "方面", value: af.value } : null,
+].filter(Boolean) as Array<{ label: string; value: string }>)
+
+let toastTimer: number | undefined
+
+function showToast(message: string, kind: "success" | "error" = "success") {
+  toast.value = { message, kind }
+  if (toastTimer) window.clearTimeout(toastTimer)
+  toastTimer = window.setTimeout(() => { toast.value = null }, 4000)
+}
+
+function clearFilter(label: string) {
+  if (label === "情感") sf.value = "全部"
+  if (label === "方面") af.value = "全部"
+  updatedAt.value = "筛选已更新"
+}
+
+function apiFilters() {
+  return {
+    sentiment: sf.value === "全部" ? "all" : sf.value === "正面" ? "positive" : "negative",
+    category: af.value === "全部" ? "all" : af.value,
+  }
+}
+
+async function loadSummary(showFeedback = false) {
+  updatedAt.value = "加载中"
+  try {
+    const r = await http.post("/summary", apiFilters())
+    pos.value = r.data.positive ?? 0
+    neg.value = r.data.negative ?? 0
+    total.value = pos.value + neg.value
+    if (r.data.avg_review_length !== undefined) avgLen.value = String(r.data.avg_review_length)
+    if (r.data.avg_rating !== undefined) avgRating.value = Number(r.data.avg_rating).toFixed(1)
+    if (r.data.aspect) aspectCount.value = Object.keys(r.data.aspect).length
+    const npsR = await http.post("/nps", apiFilters())
+    npsScore.value = npsR.data.nps_score ?? 0
+    updatedAt.value = new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
+    if (showFeedback) showToast("数据已刷新")
+  } catch {
+    if (!total.value) { pos.value = 5310; neg.value = 5291; total.value = 10601 }
+    updatedAt.value = "本地缓存"
+    if (showFeedback) showToast("刷新失败，已保留当前数据", "error")
+  }
+}
+
+async function refreshData() { await loadSummary(true) }
+
+async function downloadFilteredData() {
+  exporting.value = true
+  try {
+    const response = await http.post("/export", apiFilters())
+    const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: "application/json;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `appinsight-export-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    showToast(`已导出 ${fmt(response.data.count ?? 0)} 条数据`)
+  } catch {
+    showToast("导出失败，请确认本地后端已启动", "error")
+  } finally {
+    exporting.value = false
+  }
+}
 
 function switchView(key: string) {
   view.value = key
@@ -293,13 +401,7 @@ function animatePageIn() {
 }
 
 onMounted(async () => {
-  try {
-    const r = await http.post("/summary", { sentiment: "all", category: "all" })
-    pos.value = r.data.positive ?? 0; neg.value = r.data.negative ?? 0
-    total.value = pos.value + neg.value
-    if (r.data.avg_review_length) avgLen.value = r.data.avg_review_length.toString()
-    if (r.data.aspect) aspectCount.value = Object.keys(r.data.aspect).length
-  } catch { pos.value = 5310; neg.value = 5291; total.value = 10601 }
+  await loadSummary()
 
   const t0 = performance.now()
   const tick = () => {
@@ -311,8 +413,6 @@ onMounted(async () => {
     if (p < 1) requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
-
-  try { const npsR = await http.get("/nps"); npsScore.value = npsR.data.nps_score ?? 0 } catch {}
 
   // GSAP animations
   const sb = sidebarRef.value
@@ -326,5 +426,5 @@ onMounted(async () => {
   }
   window.addEventListener("scroll", () => { showTop.value = window.scrollY > 400 })
 })
-onUnmounted(() => { ScrollTrigger?.getAll?.()?.forEach((t: any) => t.kill()) })
+onUnmounted(() => { if (toastTimer) window.clearTimeout(toastTimer); ScrollTrigger?.getAll?.()?.forEach((t: any) => t.kill()) })
 </script>

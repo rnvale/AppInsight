@@ -9,6 +9,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 interface AppRating {
   app: string
@@ -45,10 +46,10 @@ const props = defineProps<{
 }>()
 
 const getBarColor = (rating: number) => {
-  if (rating >= 4.5) return '#16a34a'
-  if (rating >= 4.0) return '#2563eb'
-  if (rating >= 3.5) return '#d97706'
-  return '#dc2626'
+  if (rating >= 4.5) return SIGNAL_COLORS.positive
+  if (rating >= 4.0) return SIGNAL_COLORS.accent
+  if (rating >= 3.5) return SIGNAL_COLORS.warning
+  return SIGNAL_COLORS.negative
 }
 
 const fetchDataAndDraw = async () => {
@@ -79,25 +80,24 @@ const drawChart = (data: AppRating[]) => {
 
   chartInstance = echarts.init(chartRef.value)
   chartInstance.setOption({
+    ...chartBase,
     tooltip: {
+      ...chartTooltip,
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e2e8f0',
-      textStyle: { color: '#0f172a' }
     },
     grid: { left: '15%', right: '8%', top: '5%', bottom: '5%', containLabel: true },
     xAxis: {
       type: 'value',
       min: 1, max: 5,
-      axisLabel: { formatter: '{value}星', color: '#94a3b8', fontSize: 11 },
-      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
-      axisLine: { lineStyle: { color: '#e2e8f0' } }
+      axisLabel: { formatter: '{value}星', color: SIGNAL_COLORS.faint, fontSize: 11 },
+      splitLine: { lineStyle: { color: SIGNAL_COLORS.grid, type: 'dashed' } },
+      axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
     },
     yAxis: {
       type: 'category',
       data: appNames,
-      axisLabel: { fontSize: 11, fontWeight: 500, color: '#475569' },
+      axisLabel: { fontSize: 11, fontWeight: 500, color: SIGNAL_COLORS.ink },
       axisLine: { show: false }
     },
     series: [{
@@ -110,7 +110,7 @@ const drawChart = (data: AppRating[]) => {
       },
       label: {
         show: true, position: 'right',
-        formatter: '{c}星', fontWeight: 600, fontSize: 11, color: '#0f172a'
+        formatter: '{c}星', fontWeight: 600, fontSize: 11, color: SIGNAL_COLORS.ink
       }
     }]
   })

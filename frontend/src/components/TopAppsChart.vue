@@ -9,6 +9,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 const appNameMap: Record<string, string> = {
   'notability': '笔记大师',
@@ -83,12 +84,11 @@ const drawChart = (data: any[]) => {
   chartInstance = echarts.init(chartRef.value)
 
   chartInstance.setOption({
+    ...chartBase,
     tooltip: {
+      ...chartTooltip,
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e2e8f0',
-      textStyle: { color: '#0f172a' },
       formatter: (params: any) => {
         const idx = params[0].dataIndex
         const app = top8[idx]
@@ -99,29 +99,29 @@ const drawChart = (data: any[]) => {
     legend: {
       data: ['正面评论', '负面评论', '正面率'],
       top: 0,
-      textStyle: { color: '#475569', fontSize: 12 }
+      textStyle: { color: SIGNAL_COLORS.ink, fontSize: 12 }
     },
     grid: { left: '3%', right: '5%', bottom: '3%', top: '15%', containLabel: true },
     xAxis: {
       type: 'category',
       data: appNames,
-      axisLabel: { color: '#475569', fontWeight: 500, rotate: 20, interval: 0 },
-      axisLine: { lineStyle: { color: '#e2e8f0' } }
+      axisLabel: { color: SIGNAL_COLORS.ink, fontWeight: 500, rotate: 20, interval: 0 },
+      axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
     },
     yAxis: [
       {
         type: 'value',
         name: '评论数量',
-        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
-        axisLabel: { color: '#94a3b8' },
-        splitLine: { lineStyle: { color: '#f1f5f9' } }
+        nameTextStyle: { color: SIGNAL_COLORS.faint, fontSize: 11 },
+        axisLabel: { color: SIGNAL_COLORS.faint },
+        splitLine: { lineStyle: { color: SIGNAL_COLORS.grid } }
       },
       {
         type: 'value',
         name: '正面率',
-        nameTextStyle: { color: '#2563eb', fontSize: 11, fontWeight: 500 },
+        nameTextStyle: { color: SIGNAL_COLORS.accent, fontSize: 11, fontWeight: 500 },
         min: 0, max: 100,
-        axisLabel: { color: '#2563eb', formatter: '{value}%' },
+        axisLabel: { color: SIGNAL_COLORS.accent, formatter: '{value}%' },
         splitLine: { show: false }
       }
     ],
@@ -131,7 +131,7 @@ const drawChart = (data: any[]) => {
         type: 'bar',
         stack: 'total',
         data: positiveData,
-        itemStyle: { color: '#16a34a', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: SIGNAL_COLORS.positive, borderRadius: [4, 4, 0, 0] },
         barWidth: '50%'
       },
       {
@@ -139,7 +139,7 @@ const drawChart = (data: any[]) => {
         type: 'bar',
         stack: 'total',
         data: negativeData,
-        itemStyle: { color: '#dc2626', borderRadius: [0, 0, 4, 4] }
+        itemStyle: { color: SIGNAL_COLORS.negative, borderRadius: [0, 0, 4, 4] }
       },
       {
         name: '正面率',
@@ -149,8 +149,8 @@ const drawChart = (data: any[]) => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        lineStyle: { width: 2, color: '#2563eb' },
-        itemStyle: { color: '#2563eb' }
+        lineStyle: { width: 2, color: SIGNAL_COLORS.accent },
+        itemStyle: { color: SIGNAL_COLORS.accent }
       }
     ]
   })

@@ -10,6 +10,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 const props = defineProps<{
   sentimentFilter: string
@@ -22,9 +23,9 @@ const noData = ref(false)
 let chartInstance: echarts.ECharts | null = null
 
 const COLORS = [
-  '#0066FF', '#4ADE80', '#F87171', '#F59E0B', '#7C3AED',
-  '#06B6D4', '#EC4899', '#84CC16', '#F97316', '#3B82F6',
-  '#14B8A6', '#A855F7'
+  SIGNAL_COLORS.accent, SIGNAL_COLORS.positive, SIGNAL_COLORS.negative, SIGNAL_COLORS.warning,
+  '#8B6E63', '#5E9C91', '#B7746A', '#7692A0', '#D0A969', '#3E776B',
+  '#A65D4E', '#4D6673'
 ]
 
 const LABEL_MAP: Record<string, string> = {
@@ -63,18 +64,17 @@ async function fetchData() {
     })).filter((d: any) => d.value > 0)
 
     chartInstance.setOption({
+      ...chartBase,
       tooltip: {
+        ...chartTooltip,
         trigger: 'item',
         formatter: '{b}: {c} 条 ({d}%)',
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e2e8f0',
-        textStyle: { color: '#0f172a', fontSize: 12 }
       },
       legend: {
         orient: 'vertical',
         right: 8,
         top: 'center',
-        textStyle: { color: '#64748b', fontSize: 10 }
+        textStyle: { color: SIGNAL_COLORS.muted, fontSize: 10 }
       },
       series: [{
         type: 'pie',
@@ -89,7 +89,7 @@ async function fetchData() {
           color: (p: any) => COLORS[p.dataIndex % COLORS.length]
         },
         label: {
-          color: '#475569', fontSize: 11, fontWeight: 500,
+          color: SIGNAL_COLORS.ink, fontSize: 11, fontWeight: 500,
           formatter: '{b}\n{c} 条'
         },
         animationDuration: 800,
@@ -118,7 +118,7 @@ watch(() => [props.sentimentFilter, props.aspectFilter], () => fetchData())
 }
 .spinner {
   width: 20px; height: 20px; border: 2px solid #e2e8f0;
-  border-top-color: #0066FF; border-radius: 50%;
+  border-top-color: var(--accent); border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }

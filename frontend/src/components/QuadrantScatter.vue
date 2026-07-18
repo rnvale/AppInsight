@@ -9,6 +9,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 interface AppData {
   app: string
@@ -91,11 +92,10 @@ const drawChart = (data: AppData[]) => {
 
   chartInstance = echarts.init(chartRef.value)
   chartInstance.setOption({
+    ...chartBase,
     tooltip: {
+      ...chartTooltip,
       trigger: 'item',
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e2e8f0',
-      textStyle: { color: '#0f172a' },
       formatter: (params: any) => {
         const d = params.data
         return '<strong>' + d.name + '</strong><br/>评分: ' + d.rating + ' 星<br/>评论数: ' + d.reviews + '<br/>正面率: ' + (d.positiveRate || 0).toFixed(1) + '%'
@@ -106,17 +106,17 @@ const drawChart = (data: AppData[]) => {
       name: '平均评分',
       nameLocation: 'middle', nameGap: 35,
       min: minRating, max: maxRating, interval: 0.5,
-      axisLabel: { color: '#94a3b8', fontSize: 11 },
-      splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } },
-      axisLine: { lineStyle: { color: '#e2e8f0' } }
+      axisLabel: { color: SIGNAL_COLORS.faint, fontSize: 11 },
+      splitLine: { lineStyle: { type: 'dashed', color: SIGNAL_COLORS.grid } },
+      axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
     },
     yAxis: {
       name: '评论数量',
       nameLocation: 'middle', nameGap: 40,
       min: yMin, max: yMax,
-      axisLabel: { color: '#94a3b8', fontSize: 11, formatter: (v: number) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : '' + v },
-      splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } },
-      axisLine: { lineStyle: { color: '#e2e8f0' } }
+      axisLabel: { color: SIGNAL_COLORS.faint, fontSize: 11, formatter: (v: number) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : '' + v },
+      splitLine: { lineStyle: { type: 'dashed', color: SIGNAL_COLORS.grid } },
+      axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
     },
     series: [{
       type: 'scatter',
@@ -126,17 +126,17 @@ const drawChart = (data: AppData[]) => {
         color: (params: any) => {
           const r = params.data.rating
           const rc = params.data.reviews
-          if (r >= midRating && rc >= midReviews) return '#16a34a'
-          if (r < midRating && rc >= midReviews) return '#dc2626'
-          if (r >= midRating && rc < midReviews) return '#2563eb'
-          return '#94a3b8'
+          if (r >= midRating && rc >= midReviews) return SIGNAL_COLORS.positive
+          if (r < midRating && rc >= midReviews) return SIGNAL_COLORS.negative
+          if (r >= midRating && rc < midReviews) return SIGNAL_COLORS.accent
+          return SIGNAL_COLORS.neutral
         },
         opacity: 0.75,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.7)'
       },
       label: {
-        show: true, formatter: (params: any) => params.name, color: '#475569', fontSize: 9, position: 'right'
+        show: true, formatter: (params: any) => params.name, color: SIGNAL_COLORS.ink, fontSize: 9, position: 'right'
       },
       emphasis: {
         itemStyle: { opacity: 1, shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.1)' },
@@ -144,7 +144,7 @@ const drawChart = (data: AppData[]) => {
       },
       markLine: {
         silent: true, symbol: 'none',
-        lineStyle: { color: '#cbd5e1', type: 'solid', width: 1 },
+        lineStyle: { color: SIGNAL_COLORS.line, type: 'solid', width: 1 },
         data: [
           { xAxis: midRating, label: { formatter: '中值 ' + midRating, color: '#94a3b8', fontSize: 9 } },
           { yAxis: midReviews, label: { formatter: '', color: '#94a3b8', fontSize: 9 } }

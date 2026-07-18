@@ -14,6 +14,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import 'echarts-wordcloud'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 const chartRef = ref<HTMLElement | null>(null)
 const loading = ref(true)
@@ -58,12 +59,11 @@ const drawCurrentCloud = () => {
   }
   chartInstance = echarts.init(chartRef.value)
   chartInstance.setOption({
+    ...chartBase,
     tooltip: {
+      ...chartTooltip,
       trigger: 'item',
       formatter: (params: any) => `<strong>${params.name}</strong><br/>出现次数: ${params.value}`,
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e2e8f0',
-      textStyle: { color: '#0f172a' }
     },
     series: [{
       type: 'wordCloud',
@@ -79,8 +79,8 @@ const drawCurrentCloud = () => {
         fontFamily: 'Inter, sans-serif',
         fontWeight: 500,
         color: () => {
-          const greens = ['#16a34a', '#22c55e', '#4ade80', '#86efac', '#bbf7d0']
-          const reds = ['#dc2626', '#ef4444', '#f87171', '#fca5a5', '#fecaca']
+          const greens = ['#2E8B78', '#4D9D8A', '#77B7A8', '#9ECDBF', '#C7E3DA']
+          const reds = ['#C95C57', '#D47770', '#E39A91', '#EBC0B9', '#F2D9D4']
           const colors = activeTab.value === 'positive' ? greens : reds
           return colors[Math.floor(Math.random() * colors.length)]
         }
