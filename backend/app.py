@@ -28,7 +28,7 @@ CORS(app)
 # 简易缓存
 # ──────────────────────────────────────────────
 cache = {}
-CACHE_TTL = 300  # 5 分钟
+CACHE_TTL = 86400  # 24 小时（启动时预热后几乎永不过期）
 
 
 def cached(ttl=CACHE_TTL):
@@ -770,11 +770,60 @@ def api_export():
 
 
 # ══════════════════════════════════════════════
+# 启动预热：提前缓存所有核心数据
+# ══════════════════════════════════════════════
+
+def prewarm_cache():
+    """启动后通过真实 HTTP 请求预热缓存"""
+    import threading, urllib.request, json, time
+
+    def _warm():
+        time.sleep(1.0)  # 等服务器完全启动
+        endpoints = [
+            ("/api/summary", {"sentiment": "all"}),
+            ("/api/aspect_sentiment", {}),
+            ("/api/rating_sentiment", {}),
+            ("/api/domain_compare", {}),
+            ("/api/aspect_stats", {}),
+            ("/api/top_apps", {"top_n": 15}),
+            ("/api/app_ratings", {"top_n": 15}),
+            ("/api/length_analysis", {}),
+            ("/api/quadrant_scatter", {}),
+            ("/api/emotion_heatmap", {}),
+            ("/api/wordcloud", {}),
+            ("/api/nps", {}),
+            ("/api/topic_clusters", {}),
+            ("/api/sentiment_trend", {}),
+            ("/api/compare_datasets", {"sources": ["comprehensive", "games", "productivity", "social"]}),
+        ]
+        base = f"http://localhost:{port}"
+        for ep, data in endpoints:
+            try:
+                req = urllib.request.Request(
+                    f"{base}{ep}",
+                    data=json.dumps(data).encode(),
+                    headers={"Content-Type": "application/json"},
+                    method="POST"
+                )
+                urllib.request.urlopen(req, timeout=10)
+                print(f"  ✓ 预热: {ep}")
+            except Exception as e:
+                print(f"  ✗ 预热: {ep}")
+        print(f"  预热完成")
+
+    threading.Thread(target=_warm, daemon=True).start()
+
+
+# ══════════════════════════════════════════════
 # 启动
 # ══════════════════════════════════════════════
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     print(f"\n🚀 AppInsight API v3.0 启动于 :{port}")
     print(f"   数据集: {list(repo.DATASETS.keys())}")
-    print(f"   端点数: 20+\n")
-    app.run(host="0.0.0.0", port=port, debug=True)
+    print(f"   端点数: 25+\n")
+
+    # 缓存预热
+    prewarm_cache()
+
+    app.run(host="0.0.0.0", port=port, debug=False)
