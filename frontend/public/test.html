@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>桑基图测试</title>
+</head>
+<body>
+    <div id="main" style="width: 1000px; height: 600px;"></div>
+    <script type="importmap">
+        {
+            "imports": {
+                "echarts": "/node_modules/echarts/dist/echarts.esm.js"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as echarts from 'echarts';
+        
+        var nodes = [
+            { name: 'usability' },
+            { name: 'update' },
+            { name: 'positive' },
+            { name: 'negative' }
+        ];
+        
+        var links = [
+            { source: 'usability', target: 'update', value: 235 },
+            { source: 'update', target: 'positive', value: 92 },
+            { source: 'update', target: 'negative', value: 143 }
+        ];
+        
+        var chart = echarts.init(document.getElementById('main'));
+        chart.setOption({
+            title: { text: '桑基图测试' },
+            tooltip: { trigger: 'item' },
+            series: [{
+                type: 'sankey',
+                data: nodes,
+                links: links,
+                nodeWidth: 30,
+                nodeGap: 20
+            }]
+        });
+        
+        console.log('ECharts 桑基图已加载');
+    </script>
+</body>
+</html>

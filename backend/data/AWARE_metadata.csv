@@ -1,0 +1,15 @@
+﻿Column,Description
+domain,"either productivity, social networking, or games."
+app,the app name as identified by Apple’s App Store.
+review_id,a unique ID assigned to each review.
+sentence_id,a unique ID assigned to each sentence in the review.
+title,the title of the review as shown in the reviews page of Apple’s App Store.
+review,the complete review text.
+sentence,the main text to classify (part of the complete review).
+rating,the rating stars of the review as shown in the reviews page of Apple’s App Store.
+is_opinion,a Boolean value indicating whether the sentence express a positive/negative opinion.
+category,"one of the pre-defined set of domain-specific categories that represent an aspect of the app (e.g., security, usability, etc.)."
+term,a term that exists in the sentence and describes an aspect of an app that is expressed by the sentiment. A term value of “N/A” means that the term is not explicitly mentioned in the sentence.
+from,the start index of the aspect term.
+to,the ending index of the aspect term.
+sentiment,positive or negative.

@@ -1,0 +1,71 @@
+@import './base.css';
+
+#app { width: 100%; min-height: 100vh; }
+
+/* Element Plus light overrides */
+.el-select .el-input__wrapper {
+  background-color: #ffffff !important;
+  border: 1px solid var(--border-default) !important;
+  box-shadow: none !important;
+  transition: all var(--transition-fast) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 4px 12px !important;
+}
+
+.el-select .el-input__wrapper:hover {
+  border-color: var(--border-strong) !important;
+  background-color: #fafbfc !important;
+}
+
+.el-select .el-input__wrapper.is-focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow) !important;
+}
+
+.el-select .el-input__inner {
+  color: var(--text-primary) !important;
+  font-size: 13px !important;
+}
+
+.el-select-dropdown {
+  background: #ffffff !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.el-select-dropdown__item {
+  color: var(--text-secondary) !important;
+  font-size: 13px !important;
+  padding: 8px 16px !important;
+}
+
+.el-select-dropdown__item.is-hovering,
+.el-select-dropdown__item:hover {
+  background: var(--accent-subtle) !important;
+  color: var(--text-primary) !important;
+}
+
+.el-select-dropdown__item.is-selected {
+  color: var(--accent) !important;
+  font-weight: 600 !important;
+  background: var(--accent-subtle) !important;
+}
+
+.el-popper.is-light,
+.el-popper.is-dark {
+  background: #ffffff !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.el-popper__arrow::before {
+  background: #ffffff !important;
+  border-color: var(--border-default) !important;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
