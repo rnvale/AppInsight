@@ -3,21 +3,13 @@
     <LandingPage3D @enter="enterApp" />
   </div>
   <div v-else ref="appRoot" class="app-root">
-    <svg style="position:absolute;width:0;height:0" aria-hidden="true">
-      <defs>
-        <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#E56B55"/>
-          <stop offset="100%" stop-color="#2E8B78"/>
-        </linearGradient>
-      </defs>
-    </svg>
-
     <!-- Sidebar -->
     <aside ref="sidebarRef" class="sidebar" role="navigation" aria-label="主导航">
       <div class="sidebar-header">
-        <svg class="brand-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-          <rect x="2" y="2" width="24" height="24" rx="6" fill="url(#brandGrad)"/>
-          <path d="M10 14l3 3 5-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg class="brand-icon" viewBox="0 0 32 28" fill="none" aria-hidden="true">
+          <path d="M3 22h26" stroke="#dce8e3" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6 19v-6M13 19V9M20 19V5M27 19v-8" stroke="#2E8B78" stroke-linecap="round" stroke-width="3"/>
+          <path d="M6 13h7M20 5h7" stroke="#E56B55" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
         </svg>
         <div class="brand-text">
           <span class="brand-name">AppInsight</span>
@@ -104,6 +96,7 @@
             :category="af"
             @open="switchView"
           />
+          <SignalStrip :positive="pos" :negative="neg" :total="total" />
           <div class="metrics-bar">
             <div class="mb-item"><span class="mb-lbl">平均评分</span><span class="mb-val">{{ avgRating }}</span><div class="mb-stars">{{ '★'.repeat(Math.round(Number(avgRating))) }}{{ '☆'.repeat(5 - Math.round(Number(avgRating))) }}</div></div>
             <div class="mb-divider"></div>
@@ -120,7 +113,7 @@
             <div class="card"><div class="card-header"><div><h2 class="card-title">评分情感</h2><p class="card-desc">各星级评论的情感分布</p></div><span class="tag">分布</span></div><div class="card-body"><RatingSentiment :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div ref="magSectionRef" class="mag-section">
-            <div class="mag-image"><img src="/img/mag-domain.jpg" alt="" loading="lazy"></div>
+            <div class="mag-image"><img src="/img/data-studio.jpg" alt="数据分析工作台上的图表" loading="lazy"></div>
             <div class="mag-text">
               <span class="mag-label">领域分析</span>
               <h3 class="mag-title">各 App 领域情感对比</h3>
@@ -255,6 +248,7 @@ import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from "vue"
 import FilterBar from "./components/FilterBar.vue"
 import WorkspaceBar from "./components/WorkspaceBar.vue"
 import InsightSummary from "./components/InsightSummary.vue"
+import SignalStrip from "./components/SignalStrip.vue"
 import SentimentGauge from "./components/SentimentGauge.vue"
 import RatingSentiment from "./components/RatingSentiment.vue"
 import DomainCompare from "./components/DomainCompare.vue"

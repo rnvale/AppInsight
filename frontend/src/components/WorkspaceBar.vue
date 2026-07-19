@@ -1,7 +1,9 @@
 <template>
   <header class="workspace-bar" aria-label="工作区工具栏">
     <div class="workspace-context">
-      <div class="workspace-mark" aria-hidden="true">A/</div>
+      <div class="workspace-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 18V9M9 18V6M14 18V3M19 18v-7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M3 20h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></svg>
+      </div>
       <div class="workspace-copy">
         <div class="workspace-title">{{ pageLabel }}</div>
         <div class="workspace-desc">{{ pageDescription }}</div>
