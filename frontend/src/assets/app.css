@@ -145,3 +145,23 @@
 @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; }.mag-section { grid-template-columns: 1fr; }.mag-image { min-height: 180px; }.filter-dock { top: 78px; right: 16px; bottom: auto; left: auto; max-width: min(560px, calc(100vw - 32px)); } }
 @media (max-width: 768px) {
   .sidebar { display: none; }.main { margin-left: 0; padding-bottom: 66px; }.workspace-bar { top: 0; min-height: 62px; gap: 10px; padding: 10px 16px; }.workspace-context { min-width: 128px; }.workspace-mark { width: 27px; height: 27px; }.workspace-desc { display: none; }.workspace-state { overflow: auto hidden; }.workspace-updated { display: none; }.export-btn { padding: 0 9px; }.export-btn span { display: none; }.workspace-dataset { display: none; }.workspace-actions { gap: 4px; }.hero-content { padding: 28px 18px 24px; }.page-header { min-height: 168px; }.page-header-sm { min-height: 150px; }.hero-title, .page-header-sm .hero-title { font-size: 24px; }.hero-desc { font-size: 12px; }.hero-stats { width: 100%; margin-top: 18px; justify-content: space-between; }.hs-item { min-width: 0; flex: 1; padding: 0 5px; }.hs-num { font-size: 18px; }.hs-lbl { font-size: 9px; }.content { gap: 14px; padding: 16px 14px 78px; }.insight-summary { gap: 18px; padding: 20px; border-radius: 12px; }.insight-title { font-size: 24px; }.insight-description { font-size: 12px; }.insight-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }.metrics-bar { flex-wrap: wrap; padding: 8px; }.mb-item { min-width: 33.3%; padding: 8px 4px; }.mb-divider { display: none; }.mb-val { font-size: 17px; }.card-header { padding: 15px 16px 0; }.footer { flex-direction: column; gap: 4px; padding: 14px 16px 78px; text-align: center; }.top-btn { right: 16px; bottom: 78px; }.mobile-nav { position: fixed; right: 0; bottom: 0; left: 0; z-index: 300; display: flex; align-items: center; justify-content: space-around; padding: 7px 0 calc(7px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: rgba(255,255,255,0.92); box-shadow: 0 -8px 24px rgba(22,32,31,0.06); backdrop-filter: blur(16px); }.mobile-nav-item { display: flex; min-width: 54px; flex-direction: column; align-items: center; gap: 2px; padding: 4px 8px; background: transparent; color: var(--text-faint); transition: color var(--transition-fast), transform var(--transition-fast); }.mobile-nav-item.active { color: var(--accent); }.mobile-nav-icon { width: 19px; height: 19px; }.mobile-nav-label { font-size: 9px; font-weight: 600; white-space: nowrap; }.toast { right: 16px; bottom: 136px; left: 16px; max-width: none; }.filter-panel { max-height: min(60vh, 420px); overflow: auto; }.filter-dock { top: 74px; right: 14px; left: 14px; bottom: auto; max-width: none; width: auto; }.filter-row { align-items: flex-start !important; flex-direction: column; }.filter-group { align-items: flex-start !important; flex-direction: column; gap: 5px !important; width: 100%; }.segmented-control { max-width: 100%; overflow: auto; } }
+@media (max-width: 600px) {
+  html, body, #app { width: 100%; max-width: 100%; overflow-x: hidden; }
+  .filter-dock { top: 68px; right: 10px; left: 10px; width: auto; max-width: none; }
+  .page { padding-top: 143px; }
+  .filter-panel { box-sizing: border-box; padding: 9px 10px 10px !important; }
+  .filter-panel-head { gap: 8px !important; margin-bottom: 5px !important; padding-bottom: 6px !important; }
+  .filter-hint { display: none !important; }
+  .filter-row { gap: 7px !important; }
+  .filter-group { width: 100% !important; flex-direction: row !important; align-items: center !important; gap: 6px !important; }
+  .filter-label { flex: 0 0 28px; }
+  .segmented-control { min-width: 0; flex: 1; overflow-x: auto; }
+  .filter-count { width: 100%; justify-content: flex-end; }
+  .insight-summary { grid-template-columns: 1fr !important; min-width: 0; }
+  .insight-right { min-width: 0; max-width: none; }
+  .insight-title { max-width: 340px; font-size: 22px; line-height: 1.22; overflow-wrap: anywhere; }
+  .insight-description { max-width: 340px; overflow-wrap: anywhere; }
+  .metrics-bar { min-width: 0; }
+  .signal-strip, .signal-strip-data { min-width: 0; }
+  .chart-container, .chart { max-width: 100%; }
+}

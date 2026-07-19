@@ -7,7 +7,7 @@
             <svg viewBox="0 0 32 24" fill="none"><path d="M3 19V9M10 19V6M17 19V3M24 19v-7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M2 21h27" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".55"/></svg>
           </div>
           <span class="logo-text">AppInsight</span>
-          <span class="logo-ver">v3.0</span>
+          <span class="logo-ver">v4.0</span>
         </div>
         <ul class="nav-links">
           <li><button @click="$emit('enter')" class="nav-cta">进入项目 →</button></li>
@@ -166,7 +166,7 @@
         </div>
         <div class="footer-c footer-c-r">
           <span class="footer-l">版本</span>
-          <span class="footer-t">AppInsight v3.0</span>
+          <span class="footer-t">AppInsight v4.0</span>
           <span class="footer-t footer-t-sm">情感分析可视化系统</span>
         </div>
       </div>

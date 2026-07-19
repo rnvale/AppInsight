@@ -55,8 +55,8 @@ const fetchDataAndDraw = async () => {
       category: props.aspectFilter === '全部' ? 'all' : props.aspectFilter
     }
     const res = await http.post('/quadrant_scatter', filters)
-    const data = res.data as AppData[]
-    if (data && data.length > 0) drawChart(data)
+    const payload = res.data as { data: AppData[]; mid_positive_rate: number; mid_reviews: number }
+    if (payload?.data?.length > 0) drawChart(payload.data, payload.mid_positive_rate, payload.mid_reviews)
   } catch (error) {
     console.error('QuadrantScatter fetch error:', error)
   } finally {
@@ -64,26 +64,19 @@ const fetchDataAndDraw = async () => {
   }
 }
 
-const drawChart = (data: AppData[]) => {
+const drawChart = (data: AppData[], midRating: number, midReviews: number) => {
   if (!chartRef.value) return
   if (chartInstance) chartInstance.dispose()
 
   const validData = data.filter(d => d.avg_rating > 0 && d.total_reviews > 0)
   if (validData.length === 0) return
 
-  const ratings = validData.map(d => d.avg_rating)
   const reviews = validData.map(d => d.total_reviews)
-  const minRating = Math.max(1, Math.floor(Math.min(...ratings) * 10) / 10 - 0.2)
-  const maxRating = Math.min(5, Math.ceil(Math.max(...ratings) * 10) / 10 + 0.2)
-  const sortedReviews = [...reviews].sort((a, b) => a - b)
-  const yMin = Math.max(0, Math.floor((sortedReviews[Math.floor(sortedReviews.length * 0.1)] || 0) / 10) * 10)
-  const yMax = Math.ceil(((sortedReviews[Math.floor(sortedReviews.length * 0.9)] || 500) + 50) / 10) * 10
-  const midRating = 3.8
-  const midReviews = sortedReviews[Math.floor(sortedReviews.length / 2)] || 200
+  const yMax = Math.ceil(Math.max(...reviews, midReviews) * 1.08)
 
   const seriesData = validData.map(item => ({
     name: getChineseAppName(item.app),
-    value: [item.avg_rating, item.total_reviews],
+    value: [item.positive_rate, item.total_reviews],
     symbolSize: Math.min(36, Math.max(10, 12 + Math.log10(item.total_reviews) * 5)),
     rating: item.avg_rating,
     reviews: item.total_reviews,
@@ -98,22 +91,22 @@ const drawChart = (data: AppData[]) => {
       trigger: 'item',
       formatter: (params: any) => {
         const d = params.data
-        return '<strong>' + d.name + '</strong><br/>评分: ' + d.rating + ' 星<br/>评论数: ' + d.reviews + '<br/>正面率: ' + (d.positiveRate || 0).toFixed(1) + '%'
+        return '<strong>' + d.name + '</strong><br/>正面率: ' + (d.positiveRate || 0).toFixed(1) + '%<br/>平均评分: ' + d.rating + ' 星<br/>评论数: ' + d.reviews
       }
     },
-    grid: { left: '8%', right: '10%', top: '5%', bottom: '8%', containLabel: true },
+    grid: { left: '10%', right: '8%', top: '8%', bottom: '10%', containLabel: true },
     xAxis: {
-      name: '平均评分',
+      name: '正面率',
       nameLocation: 'middle', nameGap: 35,
-      min: minRating, max: maxRating, interval: 0.5,
-      axisLabel: { color: SIGNAL_COLORS.faint, fontSize: 11 },
+      type: 'value', min: 0, max: 100,
+      axisLabel: { color: SIGNAL_COLORS.faint, fontSize: 11, formatter: '{value}%' },
       splitLine: { lineStyle: { type: 'dashed', color: SIGNAL_COLORS.grid } },
       axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
     },
     yAxis: {
-      name: '评论数量',
+      name: '评论量（对数）', type: 'log',
       nameLocation: 'middle', nameGap: 40,
-      min: yMin, max: yMax,
+      min: 1, max: yMax,
       axisLabel: { color: SIGNAL_COLORS.faint, fontSize: 11, formatter: (v: number) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : '' + v },
       splitLine: { lineStyle: { type: 'dashed', color: SIGNAL_COLORS.grid } },
       axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
@@ -124,30 +117,31 @@ const drawChart = (data: AppData[]) => {
       symbolSize: (params: any) => params.symbolSize || 18,
       itemStyle: {
         color: (params: any) => {
-          const r = params.data.rating
-          const rc = params.data.reviews
-          if (r >= midRating && rc >= midReviews) return SIGNAL_COLORS.positive
-          if (r < midRating && rc >= midReviews) return SIGNAL_COLORS.negative
-          if (r >= midRating && rc < midReviews) return SIGNAL_COLORS.accent
-          return SIGNAL_COLORS.neutral
+          return params.data.positiveRate >= midRating ? SIGNAL_COLORS.positive : SIGNAL_COLORS.negative
         },
         opacity: 0.75,
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.7)'
       },
-      label: {
-        show: true, formatter: (params: any) => params.name, color: SIGNAL_COLORS.ink, fontSize: 9, position: 'right'
-      },
+      label: { show: false, formatter: (params: any) => params.name, color: SIGNAL_COLORS.ink, fontSize: 10, position: 'right' },
       emphasis: {
         itemStyle: { opacity: 1, shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.1)' },
-        label: { fontSize: 11, fontWeight: 600 }
+        label: { show: true, fontSize: 11, fontWeight: 600 }
+      },
+      markArea: {
+        silent: true,
+        itemStyle: { opacity: 0.035 },
+        data: [
+          [{ xAxis: 0, yAxis: midReviews }, { xAxis: midRating, yAxis: yMax, itemStyle: { color: SIGNAL_COLORS.negative } }],
+          [{ xAxis: midRating, yAxis: midReviews }, { xAxis: 100, yAxis: yMax, itemStyle: { color: SIGNAL_COLORS.positive } }],
+        ]
       },
       markLine: {
         silent: true, symbol: 'none',
         lineStyle: { color: SIGNAL_COLORS.line, type: 'solid', width: 1 },
         data: [
-          { xAxis: midRating, label: { formatter: '中值 ' + midRating, color: '#94a3b8', fontSize: 9 } },
-          { yAxis: midReviews, label: { formatter: '', color: '#94a3b8', fontSize: 9 } }
+          { xAxis: midRating, label: { formatter: '中位正面率 ' + midRating + '%', color: SIGNAL_COLORS.faint, fontSize: 9 } },
+          { yAxis: midReviews, label: { formatter: '中位评论量 ' + midReviews, color: SIGNAL_COLORS.faint, fontSize: 9 } }
         ]
       }
     }]

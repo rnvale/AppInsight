@@ -60,7 +60,7 @@ const fetchDataAndDraw = async () => {
       sentiment: props.sentimentFilter === '全部' ? 'all' : (props.sentimentFilter === '正面' ? 'positive' : 'negative'),
       category: props.aspectFilter === '全部' ? 'all' : props.aspectFilter
     }
-    const res = await http.post('/app_ratings', filters)
+    const res = await http.post('/app_ratings', { ...filters, top_n: 12, sort_by: 'avg_rating' })
     const data = res.data as AppRating[]
     drawChart(data)
   } catch (error) {
@@ -74,19 +74,15 @@ const drawChart = (data: AppRating[]) => {
   if (!chartRef.value) return
   if (chartInstance) chartInstance.dispose()
 
-  const top12 = data.slice(0, 12)
+  const top12 = data.slice(0, 12).sort((a, b) => b.avg_rating - a.avg_rating)
   const appNames = top12.map(item => getChineseAppName(item.app))
   const ratings = top12.map(item => item.avg_rating)
 
   chartInstance = echarts.init(chartRef.value)
   chartInstance.setOption({
     ...chartBase,
-    tooltip: {
-      ...chartTooltip,
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-    },
-    grid: { left: '15%', right: '8%', top: '5%', bottom: '5%', containLabel: true },
+    tooltip: { ...chartTooltip, trigger: 'item', formatter: (params: any) => { const d = top12[params.data?.dataIndex ?? 0]; return `<strong>${getChineseAppName(d.app)}</strong><br/>平均评分: ${d.avg_rating} 星<br/>评论量: ${d.total}<br/>正面率: ${d.positive_rate}%` } },
+    grid: { left: '22%', right: '10%', top: '8%', bottom: '10%', containLabel: true },
     xAxis: {
       type: 'value',
       min: 1, max: 5,
@@ -101,17 +97,13 @@ const drawChart = (data: AppRating[]) => {
       axisLine: { show: false }
     },
     series: [{
-      type: 'bar',
-      data: ratings,
-      barWidth: '50%',
-      itemStyle: {
-        color: (params: any) => getBarColor(params.data),
-        borderRadius: [0, 6, 6, 0]
-      },
-      label: {
-        show: true, position: 'right',
-        formatter: '{c}星', fontWeight: 600, fontSize: 11, color: SIGNAL_COLORS.ink
-      }
+      type: 'scatter',
+      data: top12.map((item, index) => ({ value: [item.avg_rating, index], dataIndex: index, total: item.total })),
+      symbolSize: (value: any, params: any) => Math.min(27, Math.max(12, 10 + Math.log10(top12[params.dataIndex]?.total || 1) * 4)),
+      itemStyle: { color: SIGNAL_COLORS.accent, borderColor: '#fff', borderWidth: 2, shadowBlur: 8, shadowColor: 'rgba(229,107,85,.18)' },
+      label: { show: true, position: 'right', formatter: (p: any) => `${ratings[p.data.dataIndex].toFixed(2)} 星`, color: SIGNAL_COLORS.ink, fontSize: 10, fontWeight: 700 },
+      markLine: { silent: true, symbol: 'none', lineStyle: { color: SIGNAL_COLORS.neutralSoft, type: 'dashed' }, label: { formatter: '3 星基线', color: SIGNAL_COLORS.faint, fontSize: 9 }, data: [{ xAxis: 3 }] },
+      emphasis: { itemStyle: { color: SIGNAL_COLORS.positive, shadowBlur: 16 }, label: { fontSize: 11 } }
     }]
   })
 }

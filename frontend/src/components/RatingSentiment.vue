@@ -41,44 +41,43 @@ async function fetchData() {
     const ratings = data.map((item: any) => `${item.rating} 星`)
     const positives = data.map((item: any) => item.positive ?? 0)
     const negatives = data.map((item: any) => item.negative ?? 0)
-    const totals = data.map((item: any) => item.total ?? 0)
+    const maxCount = Math.max(...data.map((item: any) => Math.max(item.positive ?? 0, item.negative ?? 0)), 1)
+    const axisMax = Math.ceil(maxCount * 1.18)
 
     chartInstance.setOption({
       ...chartBase,
       tooltip: {
         ...chartTooltip,
-        trigger: 'axis',
-        axisPointer: { type: 'shadow' },
+        trigger: 'axis', axisPointer: { type: 'shadow' },
+        formatter: (params: any[]) => {
+          const row = data[params[0]?.dataIndex]
+          return `<strong>${row.rating} 星</strong><br/>正面 ${row.positive} 条（${row.positive_rate}%）<br/>负面 ${row.negative} 条（${row.negative_rate}%）<br/>样本量 ${row.sample_size}`
+        },
       },
-      legend: {
-        data: ['正面评论', '负面评论', '总计'],
-        top: 0,
-        textStyle: { color: SIGNAL_COLORS.muted, fontSize: 12 }
-      },
-      grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+      legend: { data: ['负面', '正面'], top: 0, textStyle: { color: SIGNAL_COLORS.muted, fontSize: 11 } },
+      grid: { left: '12%', right: '6%', bottom: '7%', top: '16%', containLabel: true },
       xAxis: {
-        type: 'category', data: ratings,
-        axisLabel: { color: SIGNAL_COLORS.muted, fontWeight: 500 },
-        axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
+        type: 'value', min: -axisMax, max: axisMax,
+        axisLabel: { color: SIGNAL_COLORS.faint, fontSize: 10, formatter: (value: number) => Math.abs(value).toLocaleString() },
+        axisLine: { lineStyle: { color: SIGNAL_COLORS.line } },
+        splitLine: { lineStyle: { color: SIGNAL_COLORS.grid, type: 'dashed' } },
+        splitNumber: 4,
       },
       yAxis: {
-        type: 'value',
-        axisLabel: { color: SIGNAL_COLORS.faint },
-        splitLine: { lineStyle: { color: SIGNAL_COLORS.grid } }
+        type: 'category', data: ratings,
+        axisLabel: { color: SIGNAL_COLORS.ink, fontSize: 11, fontWeight: 600 },
+        axisLine: { show: false }, axisTick: { show: false }
       },
       series: [
         {
-          name: '正面评论', type: 'bar', stack: 'sentiment', data: positives,
-          itemStyle: { color: SIGNAL_COLORS.positive, borderRadius: [4, 4, 0, 0] }, barWidth: '50%'
+          name: '负面', type: 'bar', data: negatives.map((value: number) => -value),
+          itemStyle: { color: SIGNAL_COLORS.negative, borderRadius: [4, 0, 0, 4] }, barWidth: '52%',
+          label: { show: true, position: 'left', color: SIGNAL_COLORS.negative, fontSize: 10, formatter: (p: any) => Math.abs(p.value) ? Math.abs(p.value) : '' }
         },
         {
-          name: '负面评论', type: 'bar', stack: 'sentiment', data: negatives,
-          itemStyle: { color: SIGNAL_COLORS.negative, borderRadius: [0, 0, 4, 4] }
-        },
-        {
-          name: '总计', type: 'line', data: totals,
-          lineStyle: { color: SIGNAL_COLORS.accent, width: 2 },
-          itemStyle: { color: SIGNAL_COLORS.accent }, symbol: 'circle', symbolSize: 6
+          name: '正面', type: 'bar', data: positives,
+          itemStyle: { color: SIGNAL_COLORS.positive, borderRadius: [0, 4, 4, 0] }, barWidth: '52%',
+          label: { show: true, position: 'right', color: SIGNAL_COLORS.positive, fontSize: 10, formatter: (p: any) => p.value ? p.value : '' }
         }
       ]
     })

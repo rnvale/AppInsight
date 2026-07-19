@@ -13,7 +13,7 @@
         </svg>
         <div class="brand-text">
           <span class="brand-name">AppInsight</span>
-          <span class="brand-ver">v3.0</span>
+          <span class="brand-ver">v4.0</span>
         </div>
       </div>
       <div class="nav-rail">
@@ -140,15 +140,15 @@
         </header>
         <div class="content">
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">情感热力图</h2><p class="card-desc">评分与方面类别的情感矩阵</p></div></div><div class="card-body"><EmotionHeatmap :sentiment-filter="sf" :aspect-filter="af"/></div></div>
-            <div class="card"><div class="card-header"><div><h2 class="card-title">3D 气泡图</h2><p class="card-desc">气泡大小=评论量，颜色=正面率</p></div></div><div class="card-body"><BubbleChart3D :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">情感热力图</h2><p class="card-desc">评分 × 方面的正负情感平衡</p></div></div><div class="card-body"><EmotionHeatmap :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">方面信号空间</h2><p class="card-desc">正面率、评论量与方面类别的 3D 探索视图</p></div></div><div class="card-body"><BubbleChart3D :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="grid-2">
             <div class="card"><div class="card-header"><div><h2 class="card-title">评论长度分析</h2><p class="card-desc">短评倾向正面，长评蕴含更多信息</p></div></div><div class="card-body"><LengthAnalysisChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
             <div class="card"><div class="card-header"><div><h2 class="card-title">高频词云</h2><p class="card-desc">正负面评论关键词对比</p></div></div><div class="card-body"><WordCloud :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">情感趋势</h2><p class="card-desc">各评分等级的情感变化趋势</p></div></div><div class="card-body"><SentimentTrend :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">评分与情感关系</h2><p class="card-desc">各星级正面率及统计区间</p></div></div><div class="card-body"><SentimentTrend :sentiment-filter="sf" :aspect-filter="af"/></div></div>
             <div class="card"><div class="card-header"><div><h2 class="card-title">关键词搜索</h2><p class="card-desc">搜索关键词在各评分中的出现频率</p></div></div><div class="card-body"><KeywordTrend :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
         </div>
@@ -165,8 +165,8 @@
         </header>
         <div class="content">
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">玫瑰图</h2><p class="card-desc">方面类别评论量分布</p></div></div><div class="card-body"><RoseChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
-            <div class="card"><div class="card-header"><div><h2 class="card-title">热门 App 情感对比</h2><p class="card-desc">评论量最高的应用情感表现</p></div></div><div class="card-body"><TopAppsChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">方面情感构成</h2><p class="card-desc">各方面的正负评论量与比例</p></div></div><div class="card-body"><RoseChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">热门 App 质量分布</h2><p class="card-desc">正面率与评论规模的排名 Dot Plot</p></div></div><div class="card-body"><TopAppsChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="card"><div class="card-header"><div><h2 class="card-title">主题聚类分析</h2><p class="card-desc">各方面类别的关键词云与情感分布</p></div></div><div class="card-body"><TopicClusters :sentiment-filter="sf" :aspect-filter="af"/></div></div>
         </div>
@@ -183,8 +183,8 @@
         </header>
         <div class="content">
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">评分排行榜</h2><p class="card-desc">Top 应用按平均评分排名</p></div></div><div class="card-body"><AppRatings :sentiment-filter="sf" :aspect-filter="af"/></div></div>
-            <div class="card"><div class="card-header"><div><h2 class="card-title">四象限分析</h2><p class="card-desc">评分与评论量矩阵</p></div></div><div class="card-body"><QuadrantScatter :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">App 评分排名</h2><p class="card-desc">评分、正面率与评论规模的质量排序</p></div></div><div class="card-body"><AppRatings :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">竞争位置四象限</h2><p class="card-desc">正面率 × 评论量，识别高质量高声量 App</p></div></div><div class="card-body"><QuadrantScatter :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="grid-2">
             <div class="card"><div class="card-header"><div><h2 class="card-title">NPS 净推荐值</h2><p class="card-desc">推荐者 vs 贬损者分析</p></div></div><div class="card-body"><NpsAnalysis :sentiment-filter="sf" :aspect-filter="af"/></div></div>
@@ -230,7 +230,7 @@
       </nav>
 
       <footer class="footer">
-        <span>AppInsight v3.0 多维度情感分析系统</span>
+        <span>AppInsight v4.0 多维度情感分析系统</span>
         <span>AWARE 数据集 | 架构可复用</span>
       </footer>
     </main>
@@ -244,7 +244,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from "vue"
+import { ref, computed, reactive, onMounted, onUnmounted, nextTick, watch } from "vue"
 import FilterBar from "./components/FilterBar.vue"
 import WorkspaceBar from "./components/WorkspaceBar.vue"
 import InsightSummary from "./components/InsightSummary.vue"
@@ -363,6 +363,8 @@ async function loadSummary(showFeedback = false) {
 }
 
 async function refreshData() { await loadSummary(true) }
+
+watch([sf, af], () => { loadSummary() })
 
 async function downloadFilteredData() {
   exporting.value = true

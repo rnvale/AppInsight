@@ -11,6 +11,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import 'echarts-gl'
 import http from '../http'
+import { SIGNAL_COLORS, SIGNAL_SCALES } from '../utils/chartTheme'
 
 const props = defineProps<{ sentimentFilter: string; aspectFilter: string }>()
 const chartRef = ref<HTMLElement>()
@@ -59,14 +60,14 @@ async function fetchData() {
     })
 
     chartInstance.setOption({
-      tooltip: {},
+      tooltip: { formatter: (params: any) => { const row = items[params.dataIndex]; return `<strong>${names[params.dataIndex]}</strong><br/>正面率: ${row.positive_rate}%<br/>正面 ${row.positive} 条 · 负面 ${row.negative} 条<br/>样本量 ${row.sample_size}` } },
       grid3D: {
         boxWidth: 150,
         boxHeight: 120,
         boxDepth: 100,
         viewControl: {
           autoRotate: true,
-          autoRotateSpeed: 8,
+          autoRotateSpeed: 3,
           distance: 250,
           alpha: 20,
           beta: 30
@@ -81,13 +82,13 @@ async function fetchData() {
         type: 'value',
         min: 0, max: 100,
         axisLabel: { color: '#94a3b8', formatter: '{value}%' },
-        nameTextStyle: { color: '#94a3b8', fontSize: 11 }
+        nameTextStyle: { color: SIGNAL_COLORS.muted, fontSize: 11 }
       },
       yAxis3D: {
         name: '方面类别',
         type: 'category',
         data: names,
-        axisLabel: { color: '#64748b', fontSize: 10 },
+        axisLabel: { show: false },
         nameTextStyle: { color: '#94a3b8', fontSize: 11 }
       },
       zAxis3D: {
@@ -100,8 +101,9 @@ async function fetchData() {
         show: true,
         min: 0, max: 100,
         dimension: 0,
-        inRange: { color: ['#dc2626', '#f59e0b', '#16a34a'] },
-        textStyle: { color: '#94a3b8', fontSize: 10 },
+        inRange: { color: SIGNAL_SCALES.positive },
+        text: ['高正面率', '低正面率'],
+        textStyle: { color: SIGNAL_COLORS.muted, fontSize: 10 },
         calculable: true,
         left: 10, bottom: 10,
         orient: 'horizontal',
@@ -121,11 +123,11 @@ async function fetchData() {
           borderWidth: 1
         },
         label: {
-          show: true,
+          show: false,
           formatter: function(params: any) {
             return params.dataIndex != null ? names[params.dataIndex] : ''
           },
-          color: '#475569',
+          color: SIGNAL_COLORS.ink,
           fontSize: 10,
           position: 'top'
         },
