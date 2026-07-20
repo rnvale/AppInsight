@@ -161,10 +161,9 @@ def _sentiment_fields(positive, negative):
 
 
 def _comparison_frame(filters):
-    """Keep positive/negative comparisons meaningful when a sentiment slice is active."""
-    comparison_filters = dict(filters or {})
-    comparison_filters["sentiment"] = "all"
-    return repo.apply_filters(repo.get_df(comparison_filters.get("data_source")), comparison_filters)
+    """Apply the active filters while keeping positive/negative fields in the response."""
+    active_filters = dict(filters or {})
+    return repo.apply_filters(repo.get_df(active_filters.get("data_source")), active_filters)
 
 
 def _sentiment_dist(df):

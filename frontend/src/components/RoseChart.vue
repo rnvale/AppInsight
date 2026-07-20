@@ -22,6 +22,12 @@ const loading = ref(true)
 const noData = ref(false)
 let chartInstance: echarts.ECharts | null = null
 
+const COLORS = [
+  SIGNAL_COLORS.accent, SIGNAL_COLORS.positive, SIGNAL_COLORS.negative, SIGNAL_COLORS.warning,
+  '#8B6E63', '#5E9C91', '#B7746A', '#7692A0', '#D0A969', '#3E776B',
+  '#A65D4E', '#4D6673'
+]
+
 const LABEL_MAP: Record<string, string> = {
   'usability': '可用性', 'general': '整体评价', 'effectiveness': '有效性',
   'cost': '价格', 'compatibility': '兼容性', 'reliability': '可靠性',
@@ -52,30 +58,47 @@ async function fetchData() {
       return
     }
 
-    const ranked = items.map((item: any) => ({
+    const pieData = items.map((item: any) => ({
       ...item,
       name: LABEL_MAP[item.aspect] || item.aspect || '未知',
       value: (item.positive ?? 0) + (item.negative ?? 0)
-    })).filter((d: any) => d.value > 0).sort((a: any, b: any) => b.value - a.value)
+    })).filter((d: any) => d.value > 0)
 
+    chartInstance.clear()
     chartInstance.setOption({
       ...chartBase,
       tooltip: {
         ...chartTooltip,
-        trigger: 'axis', axisPointer: { type: 'shadow' },
-        formatter: (params: any[]) => {
-          const row = ranked[params[0]?.dataIndex]
-          return `<strong>${row.name}</strong><br/>正面 ${row.positive} 条（${row.positive_rate}%）<br/>负面 ${row.negative} 条（${row.negative_rate}%）<br/>样本量 ${row.sample_size}`
+        trigger: 'item',
+        formatter: (params: any) => {
+          const row = params.data
+          return `<strong>${row.name}</strong><br/>${row.value.toLocaleString()} 条（${params.percent}%）<br/>正面 ${row.positive} 条（${row.positive_rate}%）<br/>负面 ${row.negative} 条（${row.negative_rate}%）`
         },
       },
-      legend: { data: ['负面', '正面'], top: 0, textStyle: { color: SIGNAL_COLORS.muted, fontSize: 11 } },
-      grid: { left: '20%', right: '10%', top: '14%', bottom: '7%', containLabel: true },
-      xAxis: { type: 'value', axisLabel: { color: SIGNAL_COLORS.faint }, splitLine: { lineStyle: { color: SIGNAL_COLORS.grid, type: 'dashed' } } },
-      yAxis: { type: 'category', data: ranked.map((row: any) => row.name), inverse: true, axisLabel: { color: SIGNAL_COLORS.ink, fontSize: 10, fontWeight: 600 }, axisLine: { show: false }, axisTick: { show: false } },
-      series: [
-        { name: '负面', type: 'bar', stack: 'sentiment', data: ranked.map((row: any) => row.negative), barWidth: '58%', itemStyle: { color: SIGNAL_COLORS.negative, borderRadius: [4, 0, 0, 4] } },
-        { name: '正面', type: 'bar', stack: 'sentiment', data: ranked.map((row: any) => row.positive), barWidth: '58%', itemStyle: { color: SIGNAL_COLORS.positive, borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: SIGNAL_COLORS.muted, fontSize: 9, formatter: (p: any) => `${ranked[p.dataIndex].positive_rate}%` } }
-      ]
+      legend: {
+        orient: 'vertical', right: 8, top: 'center',
+        textStyle: { color: SIGNAL_COLORS.muted, fontSize: 10 }
+      },
+      series: [{
+        type: 'pie',
+        roseType: 'radius',
+        radius: ['15%', '75%'],
+        center: ['40%', '50%'],
+        data: pieData,
+        itemStyle: {
+          borderRadius: 4,
+          borderColor: SIGNAL_COLORS.panel,
+          borderWidth: 2,
+          color: (params: any) => COLORS[params.dataIndex % COLORS.length]
+        },
+        label: {
+          color: SIGNAL_COLORS.ink, fontSize: 11, fontWeight: 500,
+          formatter: (params: any) => `${params.name}\n${params.value.toLocaleString()} 条`
+        },
+        labelLine: { length: 10, length2: 8, lineStyle: { color: SIGNAL_COLORS.neutralSoft } },
+        animationDuration: 800,
+        animationEasing: 'cubicOut'
+      }]
     })
   } catch (e) {
     console.error('RoseChart:', e)
