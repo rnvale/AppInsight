@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <!-- Based on Tabler Icons chart-dots: https://github.com/tabler/tabler-icons/blob/main/icons/outline/chart-dots.svg -->
+  <path d="M3 3v18h18" stroke="#2E8B78" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10.16 10.62l2.34 2.88M15.088 13.328l2.837-4.586" stroke="#E56B55" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="9" cy="9" r="2" fill="#E56B55"/>
+  <circle cx="19" cy="7" r="2" fill="#E56B55"/>
+  <circle cx="14" cy="15" r="2" fill="#E56B55"/>
+</svg>

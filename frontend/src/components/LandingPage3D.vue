@@ -4,7 +4,7 @@
       <div class="nav-inner">
         <div class="logo-wrap">
           <div class="logo-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 24" fill="none"><path d="M3 19V9M10 19V6M17 19V3M24 19v-7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M2 21h27" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".55"/></svg>
+            <img class="logo-mark-image" src="/appinsight-mark.svg" alt="">
           </div>
           <span class="logo-text">AppInsight</span>
           <span class="logo-ver">v4.0</span>
@@ -405,7 +405,7 @@ onBeforeUnmount(() => { if (cleanup) cleanup() })
 .nav-links { display: flex; align-items: center; gap: 12px; margin: 0; padding: 0; list-style: none; }
 .logo-wrap { display: flex; align-items: center; gap: 0.6rem; }
 .logo-mark { display: flex; width: 32px; height: 26px; align-items: center; justify-content: center; color: #76d8ff; }
-.logo-mark svg { width: 28px; height: 22px; }
+.logo-mark-image { width: 26px; height: 26px; }
 .logo-text { font-size: 1.18rem; font-weight: 700; letter-spacing: 0; color: #fff; }
 .logo-ver { font-size: 0.76rem; font-weight: 500; color: #8da3c1; }
 .nav-cta { padding: 0.52rem 1.25rem; border: 1px solid rgba(116,205,255,0.26); border-radius: 8px; background: #2164c5; color: #fff; font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; font-family: inherit; }

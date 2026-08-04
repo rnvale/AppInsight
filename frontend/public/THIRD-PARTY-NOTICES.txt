@@ -1,0 +1,10 @@
+AppInsight brand mark
+=====================
+
+The AppInsight brand mark is based on the Tabler Icons "chart-dots" icon:
+https://github.com/tabler/tabler-icons/blob/main/icons/outline/chart-dots.svg
+
+Tabler Icons is distributed under the MIT License:
+https://github.com/tabler/tabler-icons/blob/main/LICENSE
+
+The source geometry is adapted for AppInsight with the project's brand colors.

@@ -6,11 +6,7 @@
     <!-- Sidebar -->
     <aside ref="sidebarRef" class="sidebar" role="navigation" aria-label="主导航">
       <div class="sidebar-header">
-        <svg class="brand-icon" viewBox="0 0 32 28" fill="none" aria-hidden="true">
-          <path d="M3 22h26" stroke="#dce8e3" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M6 19v-6M13 19V9M20 19V5M27 19v-8" stroke="#2E8B78" stroke-linecap="round" stroke-width="3"/>
-          <path d="M6 13h7M20 5h7" stroke="#E56B55" stroke-width="1.5" stroke-linecap="round" opacity=".85"/>
-        </svg>
+        <img class="brand-icon" src="/appinsight-mark.svg" alt="" aria-hidden="true">
         <div class="brand-text">
           <span class="brand-name">AppInsight</span>
           <span class="brand-ver">v4.0</span>
