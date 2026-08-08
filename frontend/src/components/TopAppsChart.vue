@@ -9,6 +9,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 const appNameMap: Record<string, string> = {
   'notability': '笔记大师',
@@ -76,83 +77,41 @@ const drawChart = (data: any[]) => {
 
   const top8 = data.slice(0, 8)
   const appNames = top8.map(item => getChineseAppName(item.app))
-  const positiveData = top8.map(item => item.positive)
-  const negativeData = top8.map(item => item.negative)
-  const positiveRates = top8.map(item => item.positive_rate)
 
   chartInstance = echarts.init(chartRef.value)
 
   chartInstance.setOption({
+    ...chartBase,
     tooltip: {
+      ...chartTooltip,
       trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e2e8f0',
-      textStyle: { color: '#0f172a' },
+      axisPointer: { type: 'line' },
       formatter: (params: any) => {
-        const idx = params[0].dataIndex
+        const idx = params.data?.dataIndex ?? 0
         const app = top8[idx]
         if (!app) return ''
-        return `<strong>${appNames[idx]}</strong><br/>正面: ${app.positive}<br/>负面: ${app.negative}<br/>正面率: ${app.positive_rate}%`
+        return `<strong>${appNames[idx]}</strong><br/>正面率: ${app.positive_rate}%<br/>评论量: ${app.sample_size}<br/>平均评分: ${app.avg_rating ?? '—'}`
       }
     },
-    legend: {
-      data: ['正面评论', '负面评论', '正面率'],
-      top: 0,
-      textStyle: { color: '#475569', fontSize: 12 }
-    },
-    grid: { left: '3%', right: '5%', bottom: '3%', top: '15%', containLabel: true },
+    legend: { show: false },
+    grid: { left: '22%', right: '10%', bottom: '8%', top: '15%', containLabel: true },
     xAxis: {
-      type: 'category',
-      data: appNames,
-      axisLabel: { color: '#475569', fontWeight: 500, rotate: 20, interval: 0 },
-      axisLine: { lineStyle: { color: '#e2e8f0' } }
+      type: 'value', min: 0, max: 100,
+      name: '正面率', nameLocation: 'middle', nameGap: 28,
+      axisLabel: { color: SIGNAL_COLORS.faint, formatter: '{value}%' },
+      axisLine: { lineStyle: { color: SIGNAL_COLORS.line } },
+      splitLine: { lineStyle: { color: SIGNAL_COLORS.grid, type: 'dashed' } },
     },
-    yAxis: [
-      {
-        type: 'value',
-        name: '评论数量',
-        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
-        axisLabel: { color: '#94a3b8' },
-        splitLine: { lineStyle: { color: '#f1f5f9' } }
-      },
-      {
-        type: 'value',
-        name: '正面率',
-        nameTextStyle: { color: '#2563eb', fontSize: 11, fontWeight: 500 },
-        min: 0, max: 100,
-        axisLabel: { color: '#2563eb', formatter: '{value}%' },
-        splitLine: { show: false }
-      }
-    ],
-    series: [
-      {
-        name: '正面评论',
-        type: 'bar',
-        stack: 'total',
-        data: positiveData,
-        itemStyle: { color: '#16a34a', borderRadius: [4, 4, 0, 0] },
-        barWidth: '50%'
-      },
-      {
-        name: '负面评论',
-        type: 'bar',
-        stack: 'total',
-        data: negativeData,
-        itemStyle: { color: '#dc2626', borderRadius: [0, 0, 4, 4] }
-      },
-      {
-        name: '正面率',
-        type: 'line',
-        yAxisIndex: 1,
-        data: positiveRates,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
-        lineStyle: { width: 2, color: '#2563eb' },
-        itemStyle: { color: '#2563eb' }
-      }
-    ]
+    yAxis: { type: 'category', data: appNames, inverse: true, axisLabel: { color: SIGNAL_COLORS.ink, fontSize: 11, fontWeight: 600 }, axisLine: { show: false }, axisTick: { show: false } },
+    series: [{
+      name: '正面率', type: 'scatter',
+      data: top8.map((item, index) => ({ value: [item.positive_rate, index], dataIndex: index, total: item.sample_size, rate: item.positive_rate })),
+      symbolSize: (value: any, params: any) => Math.min(30, Math.max(12, 10 + Math.log10(top8[params.dataIndex]?.sample_size || 1) * 5)),
+      itemStyle: { color: (params: any) => params.data.rate >= 50 ? SIGNAL_COLORS.positive : SIGNAL_COLORS.negative, opacity: 0.9, borderColor: '#fff', borderWidth: 2 },
+      label: { show: true, position: 'right', color: SIGNAL_COLORS.ink, fontSize: 10, fontWeight: 700, formatter: (p: any) => `${p.data.rate}%` },
+      markLine: { silent: true, symbol: 'none', lineStyle: { color: SIGNAL_COLORS.neutralSoft, type: 'dashed' }, label: { formatter: '50% 基线', color: SIGNAL_COLORS.faint, fontSize: 9 }, data: [{ xAxis: 50 }] },
+      emphasis: { itemStyle: { opacity: 1, shadowBlur: 14, shadowColor: 'rgba(46,139,120,.2)' }, label: { fontSize: 11 } }
+    }]
   })
 }
 

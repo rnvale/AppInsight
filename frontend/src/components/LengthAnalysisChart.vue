@@ -9,6 +9,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 const groupMap: Record<string, string> = {
   '短评论(≤20字)': '短评论 (≤20字)',
@@ -51,72 +52,47 @@ const drawChart = (data: any[]) => {
   chartInstance = chart
 
   const lengthGroups = data.map((d: any) => groupMap[d.length_group] || d.length_group)
-  const positiveData = data.map((d: any) => d.positive)
-  const negativeData = data.map((d: any) => d.negative)
+  const positiveData = data.map((d: any) => d.total ? d.positive / d.total * 100 : 0)
+  const negativeData = data.map((d: any) => d.total ? d.negative / d.total * 100 : 0)
   const positiveRates = data.map((d: any) => d.positive_rate)
 
   chart.setOption({
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      backgroundColor: 'rgba(255,255,255,0.95)',
-      borderColor: '#e2e8f0',
-      textStyle: { color: '#0f172a' }
-    },
-    legend: {
-      data: ['正面评论', '负面评论', '正面率'],
-      top: 0,
-      textStyle: { color: '#475569', fontSize: 12 }
-    },
-    grid: { left: '3%', right: '5%', bottom: '3%', top: '15%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: lengthGroups,
-      axisLabel: { color: '#475569', fontWeight: 500 },
-      axisLine: { lineStyle: { color: '#e2e8f0' } }
-    },
-    yAxis: [
-      {
-        type: 'value',
-        name: '评论数量',
-        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
-        axisLabel: { color: '#94a3b8' },
-        splitLine: { lineStyle: { color: '#f1f5f9' } }
+    ...chartBase,
+      tooltip: {
+        ...chartTooltip,
+        trigger: 'axis',
+        axisPointer: { type: 'shadow' },
+        formatter: (params: any[]) => {
+          const row = data[params[0]?.dataIndex]
+          return `<strong>${groupMap[row.length_group] || row.length_group}</strong><br/>正面 ${row.positive} 条（${row.positive_rate}%）<br/>负面 ${row.negative} 条（${row.negative_rate}%）<br/>平均长度 ${row.avg_length} 字`
+        },
       },
-      {
-        type: 'value',
-        name: '正面率',
-        nameTextStyle: { color: '#2563eb', fontSize: 11, fontWeight: 500 },
-        min: 0, max: 100,
-        axisLabel: { color: '#2563eb', formatter: '{value}%' },
-        splitLine: { show: false }
-      }
-    ],
+    legend: { data: ['负面构成', '正面构成'], top: 0, textStyle: { color: SIGNAL_COLORS.muted, fontSize: 11 } },
+    grid: { left: '16%', right: '8%', bottom: '7%', top: '15%', containLabel: true },
+    xAxis: {
+      type: 'value', min: 0, max: 100,
+      axisLabel: { color: SIGNAL_COLORS.faint, formatter: '{value}%' },
+      axisLine: { lineStyle: { color: SIGNAL_COLORS.line } },
+      splitLine: { lineStyle: { color: SIGNAL_COLORS.grid, type: 'dashed' } },
+    },
+    yAxis: { type: 'category', data: lengthGroups, inverse: true, axisLabel: { color: SIGNAL_COLORS.ink, fontSize: 10, fontWeight: 600 }, axisLine: { show: false }, axisTick: { show: false } },
     series: [
       {
-        name: '正面评论',
-        type: 'bar',
-        data: positiveData,
-        barWidth: '35%',
-        itemStyle: { color: '#16a34a', borderRadius: [6, 6, 0, 0] }
-      },
-      {
-        name: '负面评论',
+        name: '负面构成',
         type: 'bar',
         data: negativeData,
-        barWidth: '35%',
-        itemStyle: { color: '#dc2626', borderRadius: [6, 6, 0, 0] }
+        stack: 'share',
+        barWidth: '58%',
+        itemStyle: { color: SIGNAL_COLORS.negative, borderRadius: [5, 0, 0, 5] }
       },
       {
-        name: '正面率',
-        type: 'line',
-        yAxisIndex: 1,
-        data: positiveRates,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
-        lineStyle: { width: 2, color: '#2563eb' },
-        itemStyle: { color: '#2563eb' }
+        name: '正面构成',
+        type: 'bar',
+        data: positiveData,
+        stack: 'share',
+        barWidth: '58%',
+        itemStyle: { color: SIGNAL_COLORS.positive, borderRadius: [0, 5, 5, 0] },
+        label: { show: true, position: 'right', color: SIGNAL_COLORS.positive, fontSize: 10, formatter: (p: any) => `${positiveRates[p.dataIndex]}%` }
       }
     ]
   })

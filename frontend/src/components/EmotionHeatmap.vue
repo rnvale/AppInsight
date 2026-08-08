@@ -9,6 +9,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS, SIGNAL_SCALES } from '../utils/chartTheme'
 
 const props = defineProps<{
   sentimentFilter: string
@@ -51,52 +52,53 @@ async function fetchData() {
     for (const rating of ratings) {
       for (const aspect of aspects) {
         const item = data.find((d: any) => d.rating === rating && d.category === aspect)
-        const value = item ? ((item.positive_rate ?? 0) / 100) : 0
+        const value = item ? ((item.sentiment_balance ?? 0) / 100) : 0
         heatmapData.push([ratings.indexOf(rating), aspects.indexOf(aspect), value])
       }
     }
 
     chartInstance.setOption({
+      ...chartBase,
       tooltip: {
+        ...chartTooltip,
         formatter: (p: any) => {
           const r = ratings[p.value[0]]
           const a = aspects[p.value[1]]
+          const item = data.find((d: any) => d.rating === ratings[p.value[0]] && d.category === aspects[p.value[1]])
           const v = p.value[2]
-          return `<strong>${r} 星</strong> &middot; ${LABEL_MAP[a] || a}<br/>正面率: ${(v * 100).toFixed(1)}%`
+          return `<strong>${r} 星</strong> · ${LABEL_MAP[a] || a}<br/>情感平衡: ${(v * 100).toFixed(1)}%<br/>正面 ${item?.positive ?? 0} 条 · 负面 ${item?.negative ?? 0} 条<br/>样本量 ${item?.sample_size ?? 0}`
         },
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        borderColor: '#e2e8f0',
-        textStyle: { color: '#0f172a' }
       },
       grid: { left: '15%', right: '5%', bottom: '12%', top: '8%' },
       xAxis: {
         type: 'category',
         data: ratings.map((r: any) => `${r} 星`),
         splitArea: { show: true },
-        axisLabel: { color: '#64748b', fontWeight: 600, fontSize: 11 },
-        axisLine: { lineStyle: { color: '#e2e8f0' } }
+        axisLabel: { color: SIGNAL_COLORS.muted, fontWeight: 600, fontSize: 11 },
+        axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
       },
       yAxis: {
         type: 'category',
         data: aspects.map((a: string) => LABEL_MAP[a] || a),
         splitArea: { show: true },
-        axisLabel: { color: '#64748b', fontSize: 10 },
-        axisLine: { lineStyle: { color: '#e2e8f0' } }
+        axisLabel: { color: SIGNAL_COLORS.muted, fontSize: 10 },
+        axisLine: { lineStyle: { color: SIGNAL_COLORS.line } }
       },
       visualMap: {
-        min: 0, max: 1,
+        min: -1, max: 1,
         calculable: true,
         orient: 'horizontal',
         left: 'center', bottom: 0,
-        inRange: { color: ['#fecaca', '#fde68a', '#86efac', '#22c55e'] },
-        textStyle: { color: '#64748b', fontSize: 11 }
+        inRange: { color: SIGNAL_SCALES.balance },
+        text: ['正面', '负面'],
+        textStyle: { color: SIGNAL_COLORS.muted, fontSize: 11 }
       },
       series: [{
         type: 'heatmap',
         data: heatmapData,
         label: {
-          show: true, color: '#0f172a', fontSize: 11, fontWeight: 600,
-          formatter: (p: any) => (p.value[2] * 100).toFixed(0) + '%'
+          show: true, color: SIGNAL_COLORS.ink, fontSize: 11, fontWeight: 600,
+          formatter: (p: any) => `${p.value[2] > 0 ? '+' : ''}${(p.value[2] * 100).toFixed(0)}%`
         },
         emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.15)' } }
       }]
@@ -122,7 +124,7 @@ watch(() => [props.sentimentFilter, props.aspectFilter], () => fetchData())
 }
 .spinner {
   width: 20px; height: 20px; border: 2px solid #e2e8f0;
-  border-top-color: #2563eb; border-radius: 50%;
+  border-top-color: var(--accent); border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -10,6 +10,7 @@ import re
 import time
 import hashlib
 import json
+from math import sqrt
 from collections import Counter, defaultdict
 from functools import wraps
 
@@ -102,12 +103,15 @@ class DataRepository:
 
 repo = DataRepository()
 
+APP_VERSION = "4.0"
+
 
 # ──────────────────────────────────────────────
 # API 元信息
 # ──────────────────────────────────────────────
 API_META = {
-    "name": "AppInsight API v3.0",
+    "name": f"AppInsight API v{APP_VERSION}",
+    "version": APP_VERSION,
     "description": "多维度评论情感分析系统",
     "datasets": repo.list_sources(),
     "endpoints": {}
@@ -128,6 +132,40 @@ def _safe_rate(positive, total):
     return round(positive / total * 100, 1) if total > 0 else 0
 
 
+def _wilson_interval(successes, total, z=1.96):
+    """Return a percentage Wilson interval for stable ranking tooltips."""
+    if total <= 0:
+        return 0.0, 0.0
+    p = successes / total
+    denominator = 1 + (z * z / total)
+    centre = p + (z * z / (2 * total))
+    margin = z * sqrt((p * (1 - p) + (z * z / (4 * total))) / total)
+    return round(max(0.0, (centre - margin) / denominator * 100), 1), round(min(100.0, (centre + margin) / denominator * 100), 1)
+
+
+def _sentiment_fields(positive, negative):
+    total = int(positive + negative)
+    rate = _safe_rate(positive, total)
+    low, high = _wilson_interval(positive, total)
+    return {
+        "positive": int(positive),
+        "negative": int(negative),
+        "total": total,
+        "sample_size": total,
+        "positive_rate": rate,
+        "negative_rate": _safe_rate(negative, total),
+        "sentiment_balance": round((positive - negative) / total * 100, 1) if total else 0,
+        "rate_low": low,
+        "rate_high": high,
+    }
+
+
+def _comparison_frame(filters):
+    """Apply the active filters while keeping positive/negative fields in the response."""
+    active_filters = dict(filters or {})
+    return repo.apply_filters(repo.get_df(active_filters.get("data_source")), active_filters)
+
+
 def _sentiment_dist(df):
     return df["sentiment"].value_counts().to_dict()
 
@@ -138,7 +176,7 @@ def _sentiment_dist(df):
 
 @app.route("/api/test", methods=["GET"])
 def api_test():
-    return jsonify({"message": "AppInsight API v3.0 连接成功", "status": "ok"})
+    return jsonify({"message": f"AppInsight API v{APP_VERSION} 连接成功", "status": "ok", "version": APP_VERSION})
 
 
 @app.route("/api/meta", methods=["GET"])
@@ -164,9 +202,9 @@ def api_summary():
     df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
 
     sentiment = _sentiment_dist(df)
-    total = max(sum(sentiment.values()), 1)
     pos = sentiment.get("positive", 0)
     neg = sentiment.get("negative", 0)
+    total = pos + neg
 
     # 方面分布
     aspect_counts = df["category"].value_counts().to_dict()
@@ -178,9 +216,11 @@ def api_summary():
     # 评论长度统计
     text_lens = df["sentence"].fillna("").astype(str).str.len()
     avg_len = round(text_lens.mean(), 1) if len(text_lens) > 0 else 0
+    avg_rating = round(df["rating"].mean(), 2) if len(df) > 0 and "rating" in df.columns else 0
 
     return jsonify({
-        "total": len(df),
+        "total": total,
+        "record_total": len(df),
         "positive": pos,
         "negative": neg,
         "positive_rate": _safe_rate(pos, total),
@@ -189,7 +229,9 @@ def api_summary():
         "domain": domain_counts,
         "rating_distribution": rating_dist,
         "avg_review_length": avg_len,
+        "avg_rating": avg_rating,
         "data_source": f.get("data_source", "comprehensive"),
+        "version": APP_VERSION,
     })
 
 
@@ -202,7 +244,7 @@ def api_summary():
 def api_aspect_sentiment():
     """方面 × 情感 交叉分析"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
 
     result = []
     for category in df["category"].unique():
@@ -212,13 +254,7 @@ def api_aspect_sentiment():
         p = len(subset[subset["sentiment"] == "positive"])
         n = len(subset[subset["sentiment"] == "negative"])
         t = p + n
-        result.append({
-            "aspect": category,
-            "positive": p,
-            "negative": n,
-            "total": t,
-            "positive_rate": _safe_rate(p, t),
-        })
+        result.append({"aspect": category, **_sentiment_fields(p, n)})
     return jsonify(result)
 
 
@@ -227,7 +263,7 @@ def api_aspect_sentiment():
 def api_rating_sentiment():
     """评分 × 情感 一致性分析"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     valid = df[df["rating"].notna()]
 
     result = []
@@ -238,13 +274,7 @@ def api_rating_sentiment():
         p = len(rd[rd["sentiment"] == "positive"])
         n = len(rd[rd["sentiment"] == "negative"])
         t = p + n
-        result.append({
-            "rating": rating,
-            "positive": p,
-            "negative": n,
-            "positive_rate": _safe_rate(p, t),
-            "total": t,
-        })
+        result.append({"rating": rating, **_sentiment_fields(p, n)})
     return jsonify(result)
 
 
@@ -253,7 +283,7 @@ def api_rating_sentiment():
 def api_sentiment_trend():
     """情感趋势分析（按评分分组模拟时间趋势）"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     valid = df[df["rating"].notna()]
 
     result = []
@@ -264,14 +294,7 @@ def api_sentiment_trend():
         p = len(rd[rd["sentiment"] == "positive"])
         n = len(rd[rd["sentiment"] == "negative"])
         t = p + n
-        result.append({
-            "rating": rating,
-            "positive": p,
-            "negative": n,
-            "positive_rate": _safe_rate(p, t),
-            "total": t,
-            "label": f"{'⭐' * rating}",
-        })
+        result.append({"rating": rating, "label": f"{'⭐' * rating}", **_sentiment_fields(p, n)})
     return jsonify(result)
 
 
@@ -284,7 +307,7 @@ def api_sentiment_trend():
 def api_domain_compare():
     """App 领域情感对比"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     valid = df[df["domain"].notna()]
 
     result = []
@@ -293,13 +316,7 @@ def api_domain_compare():
         p = len(dd[dd["sentiment"] == "positive"])
         n = len(dd[dd["sentiment"] == "negative"])
         t = p + n
-        result.append({
-            "domain": domain,
-            "positive": p,
-            "negative": n,
-            "positive_rate": _safe_rate(p, t),
-            "total": t,
-        })
+        result.append({"domain": domain, **_sentiment_fields(p, n)})
     return jsonify(result)
 
 
@@ -308,7 +325,7 @@ def api_domain_compare():
 def api_aspect_stats():
     """方面类别统计（玫瑰图/气泡图使用）"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
 
     result = []
     for category in df["category"].unique():
@@ -318,15 +335,7 @@ def api_aspect_stats():
         p = len(subset[subset["sentiment"] == "positive"])
         n = len(subset[subset["sentiment"] == "negative"])
         t = p + n
-        result.append({
-            "aspect": category,
-            "category": category,
-            "positive": p,
-            "negative": n,
-            "total": t,
-            "positive_rate": _safe_rate(p, t),
-            "sentiment_ratio": round(p / max(t, 1), 2),
-        })
+        result.append({"aspect": category, "category": category, **_sentiment_fields(p, n), "sentiment_ratio": round(p / max(t, 1), 2)})
     return jsonify({"data": result})
 
 
@@ -339,7 +348,7 @@ def api_aspect_stats():
 def api_top_apps():
     """热门 App 情感排行"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     top_n = int(f.get("top_n", 15))
     sentiment_only = f.get("sentiment_only")
 
@@ -354,13 +363,7 @@ def api_top_apps():
         p = len(ad[ad["sentiment"] == "positive"])
         n = len(ad[ad["sentiment"] == "negative"])
         t = p + n
-        result.append({
-            "app": app_name,
-            "positive": p,
-            "negative": n,
-            "total": t,
-            "positive_rate": _safe_rate(p, t),
-        })
+        result.append({"app": app_name, "avg_rating": round(ad["rating"].mean(), 2) if "rating" in ad.columns and len(ad["rating"].dropna()) else 0, **_sentiment_fields(p, n)})
 
     # 按 total 或 positive_rate 排序
     sort_by = f.get("sort_by", "total")
@@ -373,7 +376,7 @@ def api_top_apps():
 def api_app_ratings():
     """App 平均评分排行"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     valid = df[df["rating"].notna()]
 
     result = []
@@ -384,13 +387,7 @@ def api_app_ratings():
         avg_r = ad["rating"].mean()
         t = len(ad)
         p = len(ad[ad["sentiment"] == "positive"])
-        result.append({
-            "app": app_name,
-            "avg_rating": round(avg_r, 2),
-            "total": t,
-            "positive_count": p,
-            "positive_rate": _safe_rate(p, t),
-        })
+        result.append({"app": app_name, "avg_rating": round(avg_r, 2), **_sentiment_fields(p, t - p), "positive_count": p})
 
     sort_by = f.get("sort_by", "total")
     result.sort(key=lambda x: x.get(sort_by, 0), reverse=True)
@@ -406,7 +403,7 @@ def api_app_ratings():
 def api_length_analysis():
     """评论长度与情感关联"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     df["text_length"] = df["sentence"].fillna("").astype(str).str.len()
 
     bins = [0, 20, 50, 100, 200, float("inf")]
@@ -419,14 +416,7 @@ def api_length_analysis():
         p = len(gd[gd["sentiment"] == "positive"])
         n = len(gd[gd["sentiment"] == "negative"])
         t = p + n
-        result.append({
-            "length_group": group,
-            "positive": p,
-            "negative": n,
-            "total": t,
-            "positive_rate": _safe_rate(p, t),
-            "avg_length": round(gd["text_length"].mean(), 1) if len(gd) > 0 else 0,
-        })
+        result.append({"length_group": group, "avg_length": round(gd["text_length"].mean(), 1) if len(gd) > 0 else 0, **_sentiment_fields(p, n)})
     return jsonify(result)
 
 
@@ -435,7 +425,7 @@ def api_length_analysis():
 def api_quadrant_scatter():
     """四象限散点图：评分 vs 评论量 vs 正面率"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     valid = df[df["rating"].notna()]
 
     result = []
@@ -452,7 +442,14 @@ def api_quadrant_scatter():
             "total_reviews": t,
             "positive_rate": round(pr, 1),
         })
-    return jsonify(result)
+    if not result:
+        return jsonify({"data": [], "mid_positive_rate": 0, "mid_reviews": 0, "sample_size": 0})
+    return jsonify({
+        "data": result,
+        "mid_positive_rate": round(float(np.median([item["positive_rate"] for item in result])), 2),
+        "mid_reviews": int(np.median([item["total_reviews"] for item in result])),
+        "sample_size": len(valid),
+    })
 
 
 @cached()
@@ -460,7 +457,7 @@ def api_quadrant_scatter():
 def api_emotion_heatmap():
     """情感热力图：评分 × 方面类别"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
 
     result = []
     for rating in range(1, 6):
@@ -474,14 +471,7 @@ def api_emotion_heatmap():
             p = len(cd[cd["sentiment"] == "positive"])
             n = len(cd[cd["sentiment"] == "negative"])
             t = p + n
-            result.append({
-                "rating": rating,
-                "category": category,
-                "positive": p,
-                "negative": n,
-                "positive_rate": _safe_rate(p, t),
-                "total": t,
-            })
+            result.append({"rating": rating, "category": category, **_sentiment_fields(p, n)})
     return jsonify(result)
 
 
@@ -682,7 +672,7 @@ def api_drill_down():
 def api_nps():
     """净推荐值 (NPS) 分析"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
     valid = df[df["rating"].notna()]
 
     promoters = len(valid[valid["rating"] >= 4])
@@ -709,6 +699,9 @@ def api_nps():
         "passives": int(passives),
         "detractors": int(detractors),
         "total": int(total),
+        "promoter_rate": _safe_rate(promoters, total),
+        "passive_rate": _safe_rate(passives, total),
+        "detractor_rate": _safe_rate(detractors, total),
         "domain_nps": domain_nps,
     })
 
@@ -722,7 +715,7 @@ def api_nps():
 def api_topic_clusters():
     """基于 category 的简单主题聚类"""
     f = _get_filters()
-    df = repo.apply_filters(repo.get_df(f.get("data_source")), f)
+    df = _comparison_frame(f)
 
     clusters = {}
     for cat in df["category"].unique():
@@ -735,10 +728,7 @@ def api_topic_clusters():
         n = len(cd[cd["sentiment"] == "negative"])
         t = p + n
         clusters[cat] = {
-            "total": t,
-            "positive": p,
-            "negative": n,
-            "positive_rate": _safe_rate(p, t),
+            **_sentiment_fields(p, n),
             "top_keywords": [w["name"] for w in words[:8]],
             "apps": cd["app"].dropna().unique().tolist()[:5],
         }
@@ -819,7 +809,7 @@ def prewarm_cache():
 # ══════════════════════════════════════════════
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    print(f"\n🚀 AppInsight API v3.0 启动于 :{port}")
+    print(f"\n🚀 AppInsight API v{APP_VERSION} 启动于 :{port}")
     print(f"   数据集: {list(repo.DATASETS.keys())}")
     print(f"   端点数: 25+\n")
 

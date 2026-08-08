@@ -9,6 +9,7 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 const props = defineProps<{
   sentimentFilter: string
@@ -37,45 +38,34 @@ async function fetchData() {
     const data = res.data
     if (!Array.isArray(data) || data.length === 0) { loading.value = false; return }
 
-    const domains = data.map((d: any) => d.domain || '未知')
-    const positives = data.map((d: any) => d.positive ?? 0)
-    const negatives = data.map((d: any) => d.negative ?? 0)
-    const rates = data.map((d: any) => d.positive_rate ?? 0)
+    const sorted = [...data].sort((a: any, b: any) => (b.positive_rate ?? 0) - (a.positive_rate ?? 0))
+    const domains = sorted.map((d: any) => d.domain || '未知')
+    const positives = sorted.map((d: any) => d.total ? (d.positive / d.total * 100) : 0)
+    const negatives = sorted.map((d: any) => d.total ? (d.negative / d.total * 100) : 0)
+    const rates = sorted.map((d: any) => d.positive_rate ?? 0)
 
     chartInstance.setOption({
+      ...chartBase,
       tooltip: {
+        ...chartTooltip,
         trigger: 'axis', axisPointer: { type: 'shadow' },
-        backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#e2e8f0',
-        textStyle: { color: '#0f172a' }
-      },
-      legend: {
-        data: ['正面评论', '负面评论', '正面率'],
-        top: 0, textStyle: { color: '#64748b', fontSize: 12 }
-      },
-      grid: { left: '3%', right: '5%', bottom: '3%', top: '15%', containLabel: true },
-      xAxis: {
-        type: 'category', data: domains,
-        axisLabel: { color: '#64748b', fontWeight: 500, rotate: domains.length > 6 ? 20 : 0 },
-        axisLine: { lineStyle: { color: '#e2e8f0' } }
-      },
-      yAxis: [
-        {
-          type: 'value', name: '评论数量',
-          nameTextStyle: { color: '#94a3b8', fontSize: 11, fontWeight: 500 },
-          axisLabel: { color: '#94a3b8' },
-          splitLine: { lineStyle: { color: '#f1f5f9' } }
+        formatter: (params: any[]) => {
+          const row = sorted[params[0]?.dataIndex]
+          return `<strong>${row.domain || '未知'}</strong><br/>正面 ${row.positive} 条（${row.positive_rate}%）<br/>负面 ${row.negative} 条（${row.negative_rate}%）<br/>样本量 ${row.sample_size}`
         },
-        {
-          type: 'value', name: '正面率', min: 0, max: 100,
-          nameTextStyle: { color: '#0066FF', fontSize: 11, fontWeight: 500 },
-          axisLabel: { color: '#0066FF', formatter: '{value}%' },
-          splitLine: { show: false }
-        }
-      ],
+      },
+      legend: { data: ['正面构成', '负面构成'], top: 0, textStyle: { color: SIGNAL_COLORS.muted, fontSize: 11 } },
+      grid: { left: '15%', right: '7%', bottom: '7%', top: '15%', containLabel: true },
+      xAxis: {
+        type: 'value', min: 0, max: 100,
+        axisLabel: { color: SIGNAL_COLORS.faint, formatter: '{value}%' },
+        axisLine: { lineStyle: { color: SIGNAL_COLORS.line } },
+        splitLine: { lineStyle: { color: SIGNAL_COLORS.grid, type: 'dashed' } },
+      },
+      yAxis: { type: 'category', data: domains, inverse: true, axisLabel: { color: SIGNAL_COLORS.ink, fontSize: 11, fontWeight: 600 }, axisLine: { show: false }, axisTick: { show: false } },
       series: [
-        { name: '正面评论', type: 'bar', stack: 'total', data: positives, itemStyle: { color: '#16a34a', borderRadius: [4, 4, 0, 0] }, barWidth: '50%' },
-        { name: '负面评论', type: 'bar', stack: 'total', data: negatives, itemStyle: { color: '#dc2626', borderRadius: [0, 0, 4, 4] } },
-        { name: '正面率', type: 'line', yAxisIndex: 1, data: rates, lineStyle: { color: '#0066FF', width: 2 }, itemStyle: { color: '#0066FF' }, symbol: 'circle', symbolSize: 6 }
+        { name: '负面构成', type: 'bar', stack: 'share', data: negatives, itemStyle: { color: SIGNAL_COLORS.negative, borderRadius: [4, 0, 0, 4] }, barWidth: '54%' },
+        { name: '正面构成', type: 'bar', stack: 'share', data: positives, itemStyle: { color: SIGNAL_COLORS.positive, borderRadius: [0, 4, 4, 0] }, barWidth: '54%', label: { show: true, position: 'right', color: SIGNAL_COLORS.positive, fontSize: 10, formatter: (p: any) => `${rates[p.dataIndex]}%` } }
       ]
     })
   } catch (e) {
@@ -100,7 +90,7 @@ watch(() => [props.sentimentFilter, props.aspectFilter], () => fetchData())
 }
 .spinner {
   width: 20px; height: 20px; border: 2px solid #e2e8f0;
-  border-top-color: #0066FF; border-radius: 50%; animation: spin 0.6s linear infinite;
+  border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>

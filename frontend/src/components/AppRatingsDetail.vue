@@ -5,6 +5,7 @@
 import { ref, onMounted, watch, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import http from '../http'
+import { chartBase, chartTooltip, SIGNAL_COLORS } from '../utils/chartTheme'
 
 const props = defineProps<{ sentimentFilter?: string; aspectFilter?: string }>()
 const chartRef = ref<HTMLElement | null>(null)
@@ -23,9 +24,10 @@ async function render() {
     const data = (r.data || []).slice().sort((a: any, b: any) => a.avg_rating - b.avg_rating)
     if (data.length === 0) return
     chart.setOption({
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      ...chartBase,
+      tooltip: { ...chartTooltip, trigger: 'axis', axisPointer: { type: 'shadow' } },
       grid: { top: 10, left: 120, right: 30, bottom: 20 },
-      xAxis: { type: 'value', min: 0, max: 5, axisLabel: { fontSize: 10 } },
+      xAxis: { type: 'value', min: 0, max: 5, axisLabel: { fontSize: 10, color: SIGNAL_COLORS.faint, formatter: '{value} 星' }, splitLine: { lineStyle: { color: SIGNAL_COLORS.grid, type: 'dashed' } } },
       yAxis: {
         type: 'category',
         data: data.map((d: any) => (d.app?.length > 15 ? d.app.slice(0, 15) + '...' : d.app)),
@@ -36,17 +38,14 @@ async function render() {
           type: 'bar',
           data: data.map((d: any) => d.avg_rating),
           itemStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-              { offset: 0, color: '#2563eb' },
-              { offset: 1, color: '#06b6d4' },
-            ]),
+            color: SIGNAL_COLORS.accent,
             borderRadius: [0, 4, 4, 0],
           },
           label: {
             show: true,
             position: 'right',
             formatter: (p: any) => p.value.toFixed(2),
-            fontSize: 11,
+            fontSize: 11, color: SIGNAL_COLORS.ink,
             fontWeight: 600,
           },
         },

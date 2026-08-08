@@ -3,25 +3,13 @@
     <LandingPage3D @enter="enterApp" />
   </div>
   <div v-else ref="appRoot" class="app-root">
-    <svg style="position:absolute;width:0;height:0" aria-hidden="true">
-      <defs>
-        <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#2563eb"/>
-          <stop offset="100%" stop-color="#7c3aed"/>
-        </linearGradient>
-      </defs>
-    </svg>
-
     <!-- Sidebar -->
     <aside ref="sidebarRef" class="sidebar" role="navigation" aria-label="主导航">
       <div class="sidebar-header">
-        <svg class="brand-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-          <rect x="2" y="2" width="24" height="24" rx="6" fill="url(#brandGrad)"/>
-          <path d="M10 14l3 3 5-6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <img class="brand-icon" src="/appinsight-mark.svg" alt="" aria-hidden="true">
         <div class="brand-text">
           <span class="brand-name">AppInsight</span>
-          <span class="brand-ver">v3.0</span>
+          <span class="brand-ver">v4.0</span>
         </div>
       </div>
       <div class="nav-rail">
@@ -40,7 +28,7 @@
       <div class="sidebar-footer">
         <div class="sf-row"><span class="sf-label">数据来源</span><span class="sf-value">AWARE</span></div>
         <div class="sf-row"><span class="sf-label">记录数</span><span class="sf-value">{{ fmt(total) }} 条</span></div>
-        <div class="sf-row" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,0.06)">
+        <div class="sf-row" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(220,232,227,0.1)">
           <span class="sf-label">作者</span><span class="sf-value">RainVale</span>
         </div>
         <div class="sf-row" style="align-items:center">
@@ -59,6 +47,17 @@
 
     <!-- Main -->
     <main class="main" id="main-content" ref="mainRef">
+      <WorkspaceBar
+        :page-label="currentPage.label"
+        :page-description="currentPage.description"
+        dataset-label="AWARE / 综合数据集"
+        :filters="activeFilters"
+        :updated-at="updatedAt"
+        :exporting="exporting"
+        @clear-filter="clearFilter"
+        @refresh="refreshData"
+        @export="downloadFilteredData"
+      />
 
       <!-- Dashboard -->
       <section v-if="view === 'dashboard'" ref="pageRef" class="page">
@@ -82,6 +81,18 @@
           </div>
         </header>
         <div class="content">
+          <InsightSummary
+            :positive-rate="posPct"
+            :avg-rating="avgRating"
+            :nps-score="npsScore"
+            :total="total"
+            :aspect-count="aspectCount"
+            :avg-length="avgLen"
+            :sentiment="sf"
+            :category="af"
+            @open="switchView"
+          />
+          <SignalStrip :positive="pos" :negative="neg" :total="total" />
           <div class="metrics-bar">
             <div class="mb-item"><span class="mb-lbl">平均评分</span><span class="mb-val">{{ avgRating }}</span><div class="mb-stars">{{ '★'.repeat(Math.round(Number(avgRating))) }}{{ '☆'.repeat(5 - Math.round(Number(avgRating))) }}</div></div>
             <div class="mb-divider"></div>
@@ -98,7 +109,7 @@
             <div class="card"><div class="card-header"><div><h2 class="card-title">评分情感</h2><p class="card-desc">各星级评论的情感分布</p></div><span class="tag">分布</span></div><div class="card-body"><RatingSentiment :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div ref="magSectionRef" class="mag-section">
-            <div class="mag-image"><img src="/img/mag-domain.jpg" alt="" loading="lazy"></div>
+            <div class="mag-image"><img src="/img/data-studio.jpg" alt="数据分析工作台上的图表" loading="lazy"></div>
             <div class="mag-text">
               <span class="mag-label">领域分析</span>
               <h3 class="mag-title">各 App 领域情感对比</h3>
@@ -125,15 +136,15 @@
         </header>
         <div class="content">
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">情感热力图</h2><p class="card-desc">评分与方面类别的情感矩阵</p></div></div><div class="card-body"><EmotionHeatmap :sentiment-filter="sf" :aspect-filter="af"/></div></div>
-            <div class="card"><div class="card-header"><div><h2 class="card-title">3D 气泡图</h2><p class="card-desc">气泡大小=评论量，颜色=正面率</p></div></div><div class="card-body"><BubbleChart3D :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">情感热力图</h2><p class="card-desc">评分 × 方面的正负情感平衡</p></div></div><div class="card-body"><EmotionHeatmap :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">方面信号空间</h2><p class="card-desc">正面率、评论量与方面类别的 3D 探索视图</p></div></div><div class="card-body"><BubbleChart3D :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="grid-2">
             <div class="card"><div class="card-header"><div><h2 class="card-title">评论长度分析</h2><p class="card-desc">短评倾向正面，长评蕴含更多信息</p></div></div><div class="card-body"><LengthAnalysisChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
             <div class="card"><div class="card-header"><div><h2 class="card-title">高频词云</h2><p class="card-desc">正负面评论关键词对比</p></div></div><div class="card-body"><WordCloud :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">情感趋势</h2><p class="card-desc">各评分等级的情感变化趋势</p></div></div><div class="card-body"><SentimentTrend :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">评分与情感关系</h2><p class="card-desc">各星级正面率及统计区间</p></div></div><div class="card-body"><SentimentTrend :sentiment-filter="sf" :aspect-filter="af"/></div></div>
             <div class="card"><div class="card-header"><div><h2 class="card-title">关键词搜索</h2><p class="card-desc">搜索关键词在各评分中的出现频率</p></div></div><div class="card-body"><KeywordTrend :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
         </div>
@@ -150,8 +161,8 @@
         </header>
         <div class="content">
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">玫瑰图</h2><p class="card-desc">方面类别评论量分布</p></div></div><div class="card-body"><RoseChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
-            <div class="card"><div class="card-header"><div><h2 class="card-title">热门 App 情感对比</h2><p class="card-desc">评论量最高的应用情感表现</p></div></div><div class="card-body"><TopAppsChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">方面情感构成</h2><p class="card-desc">各方面的正负评论量与比例</p></div></div><div class="card-body"><RoseChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">热门 App 质量分布</h2><p class="card-desc">正面率与评论规模的排名 Dot Plot</p></div></div><div class="card-body"><TopAppsChart :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="card"><div class="card-header"><div><h2 class="card-title">主题聚类分析</h2><p class="card-desc">各方面类别的关键词云与情感分布</p></div></div><div class="card-body"><TopicClusters :sentiment-filter="sf" :aspect-filter="af"/></div></div>
         </div>
@@ -168,8 +179,8 @@
         </header>
         <div class="content">
           <div class="grid-2">
-            <div class="card"><div class="card-header"><div><h2 class="card-title">评分排行榜</h2><p class="card-desc">Top 应用按平均评分排名</p></div></div><div class="card-body"><AppRatings :sentiment-filter="sf" :aspect-filter="af"/></div></div>
-            <div class="card"><div class="card-header"><div><h2 class="card-title">四象限分析</h2><p class="card-desc">评分与评论量矩阵</p></div></div><div class="card-body"><QuadrantScatter :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">App 评分排名</h2><p class="card-desc">评分、正面率与评论规模的质量排序</p></div></div><div class="card-body"><AppRatings :sentiment-filter="sf" :aspect-filter="af"/></div></div>
+            <div class="card"><div class="card-header"><div><h2 class="card-title">竞争位置四象限</h2><p class="card-desc">正面率 × 评论量，识别高质量高声量 App</p></div></div><div class="card-body"><QuadrantScatter :sentiment-filter="sf" :aspect-filter="af"/></div></div>
           </div>
           <div class="grid-2">
             <div class="card"><div class="card-header"><div><h2 class="card-title">NPS 净推荐值</h2><p class="card-desc">推荐者 vs 贬损者分析</p></div></div><div class="card-body"><NpsAnalysis :sentiment-filter="sf" :aspect-filter="af"/></div></div>
@@ -180,7 +191,7 @@
 
       <!-- Compare -->
       <section v-if="view === 'compare'" ref="pageRef" class="page">
-        <header class="page-header page-header-sm" style="background:linear-gradient(180deg,#eef2ff,#f5f7fb)">
+        <header class="page-header page-header-sm">
           <div class="hero-content">
             <div class="page-tag-group"><span class="tag tag-dark">对比</span></div>
             <h1 class="page-title hero-title">多数据集对比分析</h1>
@@ -194,7 +205,7 @@
 
       <!-- Explorer -->
       <section v-if="view === 'explorer'" ref="pageRef" class="page">
-        <header class="page-header page-header-sm" style="background:linear-gradient(180deg,#fdf2f8,#f5f7fb)">
+        <header class="page-header page-header-sm">
           <div class="hero-content">
             <div class="page-tag-group"><span class="tag tag-dark">浏览</span></div>
             <h1 class="page-title hero-title">数据浏览与钻取</h1>
@@ -215,12 +226,13 @@
       </nav>
 
       <footer class="footer">
-        <span>AppInsight v3.0 多维度情感分析系统</span>
+        <span>AppInsight v4.0 多维度情感分析系统</span>
         <span>AWARE 数据集 | 架构可复用</span>
       </footer>
     </main>
 
     <div class="filter-dock"><FilterBar v-model:sentimentFilter="sf" v-model:aspectFilter="af"/></div>
+    <div v-if="toast" class="toast" :class="toast.kind" role="status">{{ toast.message }}</div>
     <button v-if="showTop" class="top-btn" @click="scrollToTop" aria-label="回到顶部">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
     </button>
@@ -228,8 +240,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onUnmounted, nextTick } from "vue"
+import { ref, computed, reactive, onMounted, onUnmounted, nextTick, watch } from "vue"
 import FilterBar from "./components/FilterBar.vue"
+import WorkspaceBar from "./components/WorkspaceBar.vue"
+import InsightSummary from "./components/InsightSummary.vue"
+import SignalStrip from "./components/SignalStrip.vue"
 import SentimentGauge from "./components/SentimentGauge.vue"
 import RatingSentiment from "./components/RatingSentiment.vue"
 import DomainCompare from "./components/DomainCompare.vue"
@@ -249,7 +264,7 @@ import AppRatingsDetail from "./components/AppRatingsDetail.vue"
 import TopicClusters from "./components/TopicClusters.vue"
 import CompareDatasets from "./components/CompareDatasets.vue"
 import DataExplorer from "./components/DataExplorer.vue"
-import { gsap } from "./composables/useGsapAnimation"
+import { gsap, ScrollTrigger } from "./composables/useGsapAnimation"
 import http from "./http"
 
 const nav = [
@@ -261,12 +276,24 @@ const nav = [
   { key: "explorer", label: "浏览", icon: "M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7m-6 5H7m10 0h0M7 12l3-3m-3 3l3 3" },
 ]
 
+const pageDescriptions: Record<string, string> = {
+  dashboard: "整体健康度与关键变化",
+  sentiment: "评分与方面的情感关联",
+  topics: "主题聚类与关键词洞察",
+  rankings: "App 评分与竞争位置",
+  compare: "跨数据集差异比较",
+  explorer: "原始评论筛选与钻取",
+}
+
 const fmt = (n: number) => n.toLocaleString()
 const navIndex = computed(() => Math.max(0, nav.findIndex((x) => x.key === view.value)))
 const view = ref("dashboard")
 const showLanding = ref(true)
 const sf = ref("全部"); const af = ref("全部")
 const showTop = ref(false)
+const exporting = ref(false)
+const updatedAt = ref("刚刚")
+const toast = ref<{ kind: "success" | "error"; message: string } | null>(null)
 const sidebarRef = ref<HTMLElement | null>(null)
 const pageRef = ref<HTMLElement | null>(null)
 const chartsRow1 = ref<HTMLElement | null>(null)
@@ -280,6 +307,79 @@ const avgRating = ref("3.8"); const avgLen = ref("0"); const aspectCount = ref(1
 const posPct = computed(() => (total.value > 0 ? ((pos.value / total.value) * 100).toFixed(1) : "0.0"))
 const npsClass = computed(() => npsScore.value > 30 ? "mb-val mb-val-grn" : npsScore.value > 0 ? "mb-val" : "mb-val hs-neg")
 const anim = reactive({ total: "0", pos: "0", neg: "0" })
+const currentPage = computed(() => ({
+  label: nav.find((item) => item.key === view.value)?.label ?? "总览",
+  description: pageDescriptions[view.value] ?? pageDescriptions.dashboard,
+}))
+const activeFilters = computed(() => [
+  sf.value !== "全部" ? { label: "情感", value: sf.value } : null,
+  af.value !== "全部" ? { label: "方面", value: af.value } : null,
+].filter(Boolean) as Array<{ label: string; value: string }>)
+
+let toastTimer: number | undefined
+
+function showToast(message: string, kind: "success" | "error" = "success") {
+  toast.value = { message, kind }
+  if (toastTimer) window.clearTimeout(toastTimer)
+  toastTimer = window.setTimeout(() => { toast.value = null }, 4000)
+}
+
+function clearFilter(label: string) {
+  if (label === "情感") sf.value = "全部"
+  if (label === "方面") af.value = "全部"
+  updatedAt.value = "筛选已更新"
+}
+
+function apiFilters() {
+  return {
+    sentiment: sf.value === "全部" ? "all" : sf.value === "正面" ? "positive" : "negative",
+    category: af.value === "全部" ? "all" : af.value,
+  }
+}
+
+async function loadSummary(showFeedback = false) {
+  updatedAt.value = "加载中"
+  try {
+    const r = await http.post("/summary", apiFilters())
+    pos.value = r.data.positive ?? 0
+    neg.value = r.data.negative ?? 0
+    total.value = pos.value + neg.value
+    if (r.data.avg_review_length !== undefined) avgLen.value = String(r.data.avg_review_length)
+    if (r.data.avg_rating !== undefined) avgRating.value = Number(r.data.avg_rating).toFixed(1)
+    if (r.data.aspect) aspectCount.value = Object.keys(r.data.aspect).length
+    const npsR = await http.post("/nps", apiFilters())
+    npsScore.value = npsR.data.nps_score ?? 0
+    updatedAt.value = new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
+    if (showFeedback) showToast("数据已刷新")
+  } catch {
+    if (!total.value) { pos.value = 5310; neg.value = 5291; total.value = 10601 }
+    updatedAt.value = "本地缓存"
+    if (showFeedback) showToast("刷新失败，已保留当前数据", "error")
+  }
+}
+
+async function refreshData() { await loadSummary(true) }
+
+watch([sf, af], () => { loadSummary() })
+
+async function downloadFilteredData() {
+  exporting.value = true
+  try {
+    const response = await http.post("/export", apiFilters())
+    const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: "application/json;charset=utf-8" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `appinsight-export-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+    showToast(`已导出 ${fmt(response.data.count ?? 0)} 条数据`)
+  } catch {
+    showToast("导出失败，请确认本地后端已启动", "error")
+  } finally {
+    exporting.value = false
+  }
+}
 
 function switchView(key: string) {
   view.value = key
@@ -293,13 +393,7 @@ function animatePageIn() {
 }
 
 onMounted(async () => {
-  try {
-    const r = await http.post("/summary", { sentiment: "all", category: "all" })
-    pos.value = r.data.positive ?? 0; neg.value = r.data.negative ?? 0
-    total.value = pos.value + neg.value
-    if (r.data.avg_review_length) avgLen.value = r.data.avg_review_length.toString()
-    if (r.data.aspect) aspectCount.value = Object.keys(r.data.aspect).length
-  } catch { pos.value = 5310; neg.value = 5291; total.value = 10601 }
+  await loadSummary()
 
   const t0 = performance.now()
   const tick = () => {
@@ -311,8 +405,6 @@ onMounted(async () => {
     if (p < 1) requestAnimationFrame(tick)
   }
   requestAnimationFrame(tick)
-
-  try { const npsR = await http.get("/nps"); npsScore.value = npsR.data.nps_score ?? 0 } catch {}
 
   // GSAP animations
   const sb = sidebarRef.value
@@ -326,5 +418,5 @@ onMounted(async () => {
   }
   window.addEventListener("scroll", () => { showTop.value = window.scrollY > 400 })
 })
-onUnmounted(() => { ScrollTrigger?.getAll?.()?.forEach((t: any) => t.kill()) })
+onUnmounted(() => { if (toastTimer) window.clearTimeout(toastTimer); ScrollTrigger?.getAll?.()?.forEach((t: any) => t.kill()) })
 </script>
