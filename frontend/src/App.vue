@@ -6,7 +6,7 @@
     <!-- Sidebar -->
     <aside ref="sidebarRef" class="sidebar" role="navigation" aria-label="主导航">
       <div class="sidebar-header">
-        <img class="brand-icon" src="/appinsight-mark.svg" alt="" aria-hidden="true">
+        <img class="brand-icon" src="/appinsight-icon.png" alt="" aria-hidden="true">
         <div class="brand-text">
           <span class="brand-name">AppInsight</span>
           <span class="brand-ver">v4.0</span>

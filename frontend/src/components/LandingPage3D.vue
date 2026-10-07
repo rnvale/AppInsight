@@ -4,7 +4,7 @@
       <div class="nav-inner">
         <div class="logo-wrap">
           <div class="logo-mark" aria-hidden="true">
-            <img class="logo-mark-image" src="/appinsight-mark.svg" alt="">
+            <img class="logo-mark-image" src="/appinsight-icon.png" alt="">
           </div>
           <span class="logo-text">AppInsight</span>
           <span class="logo-ver">v4.0</span>
